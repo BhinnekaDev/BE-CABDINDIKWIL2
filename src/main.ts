@@ -1,22 +1,8 @@
-import { AppModule } from './app.module';
 import { NestFactory } from '@nestjs/core';
-import express, { Request, Response } from 'express';
-import { ExpressAdapter } from '@nestjs/platform-express';
+import { AppModule } from './app.module';
 
-const server = express();
-let nestAppPromise: Promise<void> | null = null;
-
-// Hanya buat server NestJS sekali
-const createNestServer = async () => {
-  const app = await NestFactory.create(AppModule, new ExpressAdapter(server));
-  app.enableCors();
-  await app.init();
-};
-
-export default async function handler(req: Request, res: Response) {
-  if (!nestAppPromise) {
-    nestAppPromise = createNestServer();
-    await nestAppPromise;
-  }
-  server(req, res);
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+  await app.listen(process.env.PORT ?? 3000);
 }
+bootstrap();
