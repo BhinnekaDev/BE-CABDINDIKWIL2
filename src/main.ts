@@ -28,36 +28,38 @@ export async function createNestApp() {
       }),
     );
 
-    const config = new DocumentBuilder()
-      .setTitle('Dokumentasi API CAB DINDIK WILAYAH II')
-      .setDescription(
-        'Dokumentasi resmi API untuk sistem Backend Cabang Dinas Pendidikan Wilayah II Kabupaten Rejang Lebong',
-      )
-      .setVersion('1.0')
-      .addBearerAuth(
-        {
-          type: 'http',
-          scheme: 'bearer',
-          bearerFormat: 'JWT',
-          description: 'Bearer token',
-        },
-        'access-token',
-      )
-      .build();
+    if (process.env.LOCAL === 'true') {
+      const config = new DocumentBuilder()
+        .setTitle('Dokumentasi API CAB DINDIK WILAYAH II')
+        .setDescription(
+          'Dokumentasi resmi API untuk sistem Backend Cabang Dinas Pendidikan Wilayah II Kabupaten Rejang Lebong',
+        )
+        .setVersion('1.0')
+        .addBearerAuth(
+          {
+            type: 'http',
+            scheme: 'bearer',
+            bearerFormat: 'JWT',
+            description: 'Bearer token',
+          },
+          'access-token',
+        )
+        .build();
 
-    const document = SwaggerModule.createDocument(app, config);
+      const document = SwaggerModule.createDocument(app, config);
 
-    server.use(
-      '/docs',
-      swaggerUi.serve,
-      swaggerUi.setup(document, {
-        customCss: `.topbar { display: none }`,
-        swaggerOptions: {
-          docExpansion: 'none',
-          defaultModelsExpandDepth: -1,
-        },
-      }),
-    );
+      server.use(
+        '/docs',
+        swaggerUi.serve,
+        swaggerUi.setup(document, {
+          customCss: `.topbar { display: none }`,
+          swaggerOptions: {
+            docExpansion: 'none',
+            defaultModelsExpandDepth: -1,
+          },
+        }),
+      );
+    }
 
     await app.init();
     nestApp = app;
