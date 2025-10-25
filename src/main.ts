@@ -1,6 +1,6 @@
+import 'tsconfig-paths/register';
 import 'dotenv/config';
 import express from 'express';
-import 'tsconfig-paths/register';
 import { AppModule } from '@/app.module';
 import { NestFactory } from '@nestjs/core';
 import swaggerUi from 'swagger-ui-express';
