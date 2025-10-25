@@ -1,83 +1,87 @@
 import 'dotenv/config';
 import { AppModule } from './app.module';
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
-import * as swaggerUi from 'swagger-ui-express';
+import swaggerUi from 'swagger-ui-express';
+import express, { Request, Response } from 'express';
 import { ExpressAdapter } from '@nestjs/platform-express';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
-import express, { Request, Response, NextFunction } from 'express';
+import { ValidationPipe, INestApplication } from '@nestjs/common';
 
 const server = express();
-let initialized = false;
+let nestApp: INestApplication | null = null;
 
-async function initNest(): Promise<void> {
-  if (initialized) return;
+async function bootstrap() {
+  if (!nestApp) {
+    const app = await NestFactory.create(AppModule, new ExpressAdapter(server));
 
-  const app = await NestFactory.create(AppModule, new ExpressAdapter(server));
-  app.enableCors({
-    origin: '*',
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    credentials: true,
-  });
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: false,
-      transform: true,
-    }),
-  );
+    app.enableCors({
+      origin: '*',
+      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+      credentials: true,
+    });
 
-  const config = new DocumentBuilder()
-    .setTitle('Dokumentasi API CAB DINDIK WILAYAH II')
-    .setDescription(
-      'Dokumentasi resmi API untuk sistem Backend Cabang Dinas Pendidikan Wilayah II Kabupaten Rejang Lebong',
-    )
-    .setVersion('1.0')
-    .addBearerAuth(
-      {
-        type: 'http',
-        scheme: 'bearer',
-        bearerFormat: 'JWT',
-        description: 'Bearer token',
-      },
-      'access-token',
-    )
-    .build();
+    app.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: false,
+        transform: true,
+      }),
+    );
 
-  const document = SwaggerModule.createDocument(app, config);
+    const config = new DocumentBuilder()
+      .setTitle('Dokumentasi API CAB DINDIK WILAYAH II')
+      .setDescription(
+        'Dokumentasi resmi API untuk sistem Backend Cabang Dinas Pendidikan Wilayah II Kabupaten Rejang Lebong',
+      )
+      .setVersion('1.0')
+      .addBearerAuth(
+        {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+          description: 'Bearer token',
+        },
+        'access-token',
+      )
+      .build();
 
-  server.use('/docs', swaggerUi.serve);
-  server.get(
-    '/docs',
-    swaggerUi.setup(document) as unknown as (
-      req: Request,
-      res: Response,
-      next: NextFunction,
-    ) => void,
-  );
+    const document = SwaggerModule.createDocument(app, config);
 
-  await app.init();
-  initialized = true;
+    server.use(
+      '/docs',
+      swaggerUi.serve,
+      swaggerUi.setup(document, {
+        customCss: `.topbar { display: none }`,
+        swaggerOptions: {
+          docExpansion: 'none',
+          defaultModelsExpandDepth: -1,
+        },
+      }),
+    );
+
+    await app.init();
+    nestApp = app;
+  }
+
+  return nestApp;
 }
 
 // =====================
-// Local dev
+// Local development
 // =====================
 if (process.env.LOCAL === 'true') {
-  void initNest()
-    .then(() => {
-      const port = Number(process.env.PORT) || 3000;
-      server.listen(port, () =>
-        console.log(`🚀 Server running at http://localhost:${port}`),
-      );
-    })
-    .catch(console.error);
+  void bootstrap().then(() => {
+    const port = Number(process.env.PORT) || 3000;
+    server.listen(port, () => {
+      console.log(`🚀 Server running at http://localhost:${port}`);
+    });
+  });
 }
 
 // =====================
 // Vercel serverless handler
 // =====================
-export default async (req: Request, res: Response) => {
-  await initNest();
+export default async function handler(req: Request, res: Response) {
+  await bootstrap();
   server(req, res);
-};
+}
