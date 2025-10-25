@@ -12,6 +12,7 @@ import {
   Post,
   Body,
   Query,
+  Delete,
   UseGuards,
   Controller,
 } from '@nestjs/common';
@@ -74,5 +75,20 @@ export class SatpenController {
       paramSatpenDto,
       updateSatpenDto,
     );
+  }
+
+  @Delete()
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({
+    summary: 'Hapus satuan pendidikan (harus login sebagai admin)',
+  })
+  async delete(@Req() req: Request, @Query() paramSatpenDto: ParamSatpenDto) {
+    const userJwt = req.headers.authorization?.split(' ')[1];
+    if (!userJwt) {
+      throw new Error('JWT token not found');
+    }
+
+    return await this.satpenService.deleteSatpen(userJwt, paramSatpenDto);
   }
 }

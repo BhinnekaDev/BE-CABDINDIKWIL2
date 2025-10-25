@@ -100,4 +100,22 @@ export class SatpenService {
 
     return data as Satpen[];
   }
+
+  async deleteSatpen(userJwt: string, paramSatpenDto: ParamSatpenDto) {
+    const { npsnParam } = paramSatpenDto;
+
+    const supabaseWithUser = createSupabaseClientWithUser(userJwt);
+
+    const { data, error } = await supabaseWithUser
+      .from('satuan_pendidikan')
+      .delete()
+      .eq('npsn', npsnParam)
+      .select();
+
+    if (error) {
+      throw new InternalServerErrorException(error.message);
+    }
+
+    return data as Satpen[];
+  }
 }
