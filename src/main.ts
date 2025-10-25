@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { AppModule } from '@/app.module';
+import { AppModule } from './app.module';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import * as swaggerUi from 'swagger-ui-express';
@@ -12,14 +12,13 @@ let initialized = false;
 
 async function initNest(): Promise<void> {
   if (initialized) return;
-  const app = await NestFactory.create(AppModule, new ExpressAdapter(server));
 
+  const app = await NestFactory.create(AppModule, new ExpressAdapter(server));
   app.enableCors({
     origin: '*',
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });
-
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -68,14 +67,11 @@ if (process.env.LOCAL === 'true') {
   void initNest()
     .then(() => {
       const port = Number(process.env.PORT) || 3000;
-      server.listen(port, () => {
-        console.log(`🚀 Server running at http://localhost:${port}`);
-        console.log(
-          `📘 Swagger Docs available at http://localhost:${port}/docs`,
-        );
-      });
+      server.listen(port, () =>
+        console.log(`🚀 Server running at http://localhost:${port}`),
+      );
     })
-    .catch((err) => console.error(err));
+    .catch(console.error);
 }
 
 // =====================
