@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import express from 'express';
-import { AppModule } from '@/app.module';
+import { AppModule } from './app.module';
 import { NestFactory } from '@nestjs/core';
 import swaggerUi from 'swagger-ui-express';
 import { ExpressAdapter } from '@nestjs/platform-express';
