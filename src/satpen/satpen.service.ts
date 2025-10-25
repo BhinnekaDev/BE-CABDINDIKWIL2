@@ -5,7 +5,12 @@ import {
 } from '@nestjs/common';
 import { Satpen } from './interfaces/satpen.interface';
 import { SupabaseClient } from '@supabase/supabase-js';
+import { ParamSatpenDto } from './dto/param-satpen.dto';
+import { CreateSatpenDto } from './dto/create-satpen.dto';
+import { UpdateSatpenDto } from './dto/update-satpen.dto';
 import { FilterSatpenDto } from './dto/filter-satpen.dto';
+import { SatpenView } from './interfaces/satpen.interface';
+import { createSupabaseClientWithUser } from '../../supabase/supabase.client';
 
 @Injectable()
 export class SatpenService {
@@ -31,7 +36,7 @@ export class SatpenService {
     return data;
   }
 
-  async getFilteredSatpen(filter: FilterSatpenDto): Promise<Satpen[]> {
+  async getFilteredSatpen(filter: FilterSatpenDto): Promise<SatpenView[]> {
     const { nama, jenis } = filter;
 
     let query = this.supabase.from('satpen_with_jenis').select('*');
@@ -47,7 +52,68 @@ export class SatpenService {
     const { data, error } = await query;
 
     if (error) {
-      throw new Error(`Error filtering data: ${error.message}`);
+      throw new InternalServerErrorException(error.message);
+    }
+
+    return data as SatpenView[];
+  }
+
+  async createSatpen(
+    userJwt: string,
+    createSatpenDto: CreateSatpenDto,
+  ): Promise<Satpen[]> {
+    const { npsn, nama, jenis_id, status, alamat, lokasi_id } = createSatpenDto;
+
+    const supabaseWithUser = createSupabaseClientWithUser(userJwt);
+
+    const { data, error } = await supabaseWithUser
+      .from('satuan_pendidikan')
+      .insert({ npsn, nama, jenis_id, status, alamat, lokasi_id })
+      .select();
+
+    if (error) {
+      throw new InternalServerErrorException(error.message);
+    }
+
+    return data as Satpen[];
+  }
+
+  async updateSatpen(
+    userJwt: string,
+    paramSatpenDto: ParamSatpenDto,
+    updateSatpenDto: UpdateSatpenDto,
+  ): Promise<Satpen[]> {
+    const { npsnParam } = paramSatpenDto;
+    const { npsn, nama, jenis_id, status, alamat, lokasi_id } = updateSatpenDto;
+
+    const supabaseWithUser = createSupabaseClientWithUser(userJwt);
+
+    const { data, error } = await supabaseWithUser
+      .from('satuan_pendidikan')
+      .update({ npsn, nama, jenis_id, status, alamat, lokasi_id })
+      .eq('npsn', npsnParam)
+      .select();
+
+    if (error) {
+      throw new InternalServerErrorException(error.message);
+    }
+
+    return data as Satpen[];
+  }
+
+  async deleteSatpen(userJwt: string, paramSatpenDto: ParamSatpenDto) {
+    const { npsnParam } = paramSatpenDto;
+
+    const supabaseWithUser = createSupabaseClientWithUser(userJwt);
+
+    const { data, error } = await supabaseWithUser
+      .from('satuan_pendidikan')
+      .delete()
+      .eq('npsn', npsnParam)
+      .select();
+
+    if (error) {
+      throw new InternalServerErrorException(error.message);
     }
 
     return data as Satpen[];
