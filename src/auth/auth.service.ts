@@ -1,5 +1,5 @@
-import { LoginDto } from '@/auth/dto/login.dto';
-import { RegisterDto } from '@/auth/dto/register.dto';
+import { LoginDto } from './dto/login.dto';
+import { RegisterDto } from './dto/register.dto';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Injectable, Inject, UnauthorizedException } from '@nestjs/common';
 

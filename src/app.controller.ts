@@ -1,5 +1,5 @@
 import type { Response } from 'express';
-import { AppService } from '@/app.service';
+import { AppService } from './app.service';
 import { ApiExcludeEndpoint } from '@nestjs/swagger';
 import { Controller, Get, Res } from '@nestjs/common';
 

@@ -1,9 +1,9 @@
-import { LoginDto } from '@/auth/dto/login.dto';
-import { AuthService } from '@/auth/auth.service';
-import { RegisterDto } from '@/auth/dto/register.dto';
-import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
+import { LoginDto } from './dto/login.dto';
+import { AuthService } from './auth.service';
+import { RegisterDto } from './dto/register.dto';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import type { AuthRequest } from './guards/auth-request.interface';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import type { AuthRequest } from '@/auth/guards/auth-request.interface';
 import { Controller, Post, Body, Get, Req, UseGuards } from '@nestjs/common';
 
 @ApiTags('Autentikasi')

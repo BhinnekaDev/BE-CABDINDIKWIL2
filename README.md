@@ -76,7 +76,7 @@ BE-CABDINDIKWIL2/
 
 ---
 
-## 🔌 Konfigurasi `.en`
+## 🔌 Konfigurasi `.env`
 
 Buat file `.env` di root project:
 
