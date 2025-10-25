@@ -1,8 +1,8 @@
 import 'dotenv/config';
-import { AppModule } from './app.module';
+import express from 'express';
+import { AppModule } from '@/app.module';
 import { NestFactory } from '@nestjs/core';
 import swaggerUi from 'swagger-ui-express';
-import express, { Request, Response } from 'express';
 import { ExpressAdapter } from '@nestjs/platform-express';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ValidationPipe, INestApplication } from '@nestjs/common';
@@ -10,7 +10,7 @@ import { ValidationPipe, INestApplication } from '@nestjs/common';
 const server = express();
 let nestApp: INestApplication | null = null;
 
-async function bootstrap() {
+export async function createNestApp() {
   if (!nestApp) {
     const app = await NestFactory.create(AppModule, new ExpressAdapter(server));
 
@@ -70,7 +70,7 @@ async function bootstrap() {
 // Local development
 // =====================
 if (process.env.LOCAL === 'true') {
-  void bootstrap().then(() => {
+  void createNestApp().then(() => {
     const port = Number(process.env.PORT) || 3000;
     server.listen(port, () => {
       console.log(`🚀 Server running at http://localhost:${port}`);
@@ -78,10 +78,4 @@ if (process.env.LOCAL === 'true') {
   });
 }
 
-// =====================
-// Vercel serverless handler
-// =====================
-export default async function handler(req: Request, res: Response) {
-  await bootstrap();
-  server(req, res);
-}
+export { server };
