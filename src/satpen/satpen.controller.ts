@@ -1,15 +1,19 @@
+import type { Request } from 'express';
 import { SatpenService } from './satpen.service';
+import { ParamSatpenDto } from './dto/param-satpen.dto';
 import { FilterSatpenDto } from './dto/filter-satpen.dto';
 import { CreateSatpenDto } from './dto/create-satpen.dto';
+import { UpdateSatpenDto } from './dto/update-satpen.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import {
   Get,
+  Req,
+  Put,
   Post,
   Body,
   Query,
   UseGuards,
   Controller,
-  Req,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -17,7 +21,6 @@ import {
   ApiOperation,
   ApiBearerAuth,
 } from '@nestjs/swagger';
-import type { Request } from 'express';
 
 @ApiTags('Satpen')
 @Controller('satpen')
@@ -47,6 +50,29 @@ export class SatpenController {
       throw new Error('JWT token not found');
     }
 
-    return await this.satpenService.createSatpen(createSatpenDto, userJwt);
+    return await this.satpenService.createSatpen(userJwt, createSatpenDto);
+  }
+
+  @Put()
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({
+    summary: 'Update satuan pendidikan (harus login sebagai admin)',
+  })
+  async update(
+    @Req() req: Request,
+    @Query() paramSatpenDto: ParamSatpenDto,
+    @Body() updateSatpenDto: UpdateSatpenDto,
+  ) {
+    const userJwt = req.headers.authorization?.split(' ')[1];
+    if (!userJwt) {
+      throw new Error('JWT token not found');
+    }
+
+    return await this.satpenService.updateSatpen(
+      userJwt,
+      paramSatpenDto,
+      updateSatpenDto,
+    );
   }
 }

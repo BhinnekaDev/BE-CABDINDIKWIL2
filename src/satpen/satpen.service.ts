@@ -5,9 +5,11 @@ import {
 } from '@nestjs/common';
 import { Satpen } from './interfaces/satpen.interface';
 import { SupabaseClient } from '@supabase/supabase-js';
-import { SatpenView } from './interfaces/satpen.interface';
+import { ParamSatpenDto } from './dto/param-satpen.dto';
 import { CreateSatpenDto } from './dto/create-satpen.dto';
+import { UpdateSatpenDto } from './dto/update-satpen.dto';
 import { FilterSatpenDto } from './dto/filter-satpen.dto';
+import { SatpenView } from './interfaces/satpen.interface';
 import { createSupabaseClientWithUser } from '../../supabase/supabase.client';
 
 @Injectable()
@@ -57,8 +59,8 @@ export class SatpenService {
   }
 
   async createSatpen(
-    createSatpenDto: CreateSatpenDto,
     userJwt: string,
+    createSatpenDto: CreateSatpenDto,
   ): Promise<Satpen[]> {
     const { npsn, nama, jenis_id, status, alamat, lokasi_id } = createSatpenDto;
 
@@ -66,7 +68,30 @@ export class SatpenService {
 
     const { data, error } = await supabaseWithUser
       .from('satuan_pendidikan')
-      .insert([{ npsn, nama, jenis_id, status, alamat, lokasi_id }])
+      .insert({ npsn, nama, jenis_id, status, alamat, lokasi_id })
+      .select();
+
+    if (error) {
+      throw new InternalServerErrorException(error.message);
+    }
+
+    return data as Satpen[];
+  }
+
+  async updateSatpen(
+    userJwt: string,
+    paramSatpenDto: ParamSatpenDto,
+    updateSatpenDto: UpdateSatpenDto,
+  ): Promise<Satpen[]> {
+    const { npsnParam } = paramSatpenDto;
+    const { npsn, nama, jenis_id, status, alamat, lokasi_id } = updateSatpenDto;
+
+    const supabaseWithUser = createSupabaseClientWithUser(userJwt);
+
+    const { data, error } = await supabaseWithUser
+      .from('satuan_pendidikan')
+      .update({ npsn, nama, jenis_id, status, alamat, lokasi_id })
+      .eq('npsn', npsnParam)
       .select();
 
     if (error) {
