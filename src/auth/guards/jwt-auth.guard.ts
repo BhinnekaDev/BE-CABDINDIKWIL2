@@ -1,5 +1,5 @@
-import { SupabaseService } from '@supabase/supabase.service';
-import { AuthRequest } from '@/auth/guards/auth-request.interface';
+import { AuthRequest } from './auth-request.interface';
+import { SupabaseService } from '../../../supabase/supabase.service';
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
 
 @Injectable()
