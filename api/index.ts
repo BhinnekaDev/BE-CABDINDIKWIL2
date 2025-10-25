@@ -1,4 +1,4 @@
-import { server, createNestApp } from '@/main';
+import { server, createNestApp } from '../src/main';
 import type { IncomingMessage, ServerResponse } from 'http';
 
 export default async function handler(
