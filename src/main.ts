@@ -1,15 +1,17 @@
 import 'dotenv/config';
 import { AppModule } from '@/app.module';
 import { NestFactory } from '@nestjs/core';
-import * as swaggerUi from 'swagger-ui-express';
 import { ValidationPipe } from '@nestjs/common';
+import * as swaggerUi from 'swagger-ui-express';
 import { ExpressAdapter } from '@nestjs/platform-express';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import express, { Request, Response, NextFunction } from 'express';
 
 const server = express();
+let initialized = false;
 
-async function createApp(): Promise<void> {
+async function initNest(): Promise<void> {
+  if (initialized) return;
   const app = await NestFactory.create(AppModule, new ExpressAdapter(server));
 
   app.enableCors({
@@ -56,10 +58,14 @@ async function createApp(): Promise<void> {
   );
 
   await app.init();
+  initialized = true;
 }
 
+// =====================
+// Local dev
+// =====================
 if (process.env.LOCAL === 'true') {
-  void createApp()
+  void initNest()
     .then(() => {
       const port = Number(process.env.PORT) || 3000;
       server.listen(port, () => {
@@ -69,9 +75,13 @@ if (process.env.LOCAL === 'true') {
         );
       });
     })
-    .catch((err: unknown) => console.error(err));
+    .catch((err) => console.error(err));
 }
 
-export default (req: Request, res: Response): void => {
+// =====================
+// Vercel serverless handler
+// =====================
+export default async (req: Request, res: Response) => {
+  await initNest();
   server(req, res);
 };

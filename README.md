@@ -82,6 +82,7 @@ Buat file `.env` di root project:
 
 ```env
 PORT=3000
+LOCAL=true
 SUPABASE_URL=https://your-supabase-project-url.supabase.co
 SUPABASE_ANON_KEY=your-anon-key
 ```
