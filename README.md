@@ -4,6 +4,15 @@ _Backend API untuk website Cabang Dinas Pendidikan Wilayah II Kabupaten Rejang L
 
 > Backend ini dibangun menggunakan **NestJS** dan TypeScript. Menyediakan API untuk modul Beranda, Berita, Prakata, Seputar Cabdin, SLB, SMA, SMK, Struktur Organisasi, Tupoksi, dan Visi Misi.
 
+[![Stars](https://img.shields.io/github/stars/BhinnekaDev/BE-CABDINDIKWIL2?style=flat-square)](https://github.com/BhinnekaDev/BE-CABDINDIKWIL2/stargazers)
+[![Forks](https://img.shields.io/github/forks/BhinnekaDev/BE-CABDINDIKWIL2?style=flat-square)](https://github.com/BhinnekaDev/BE-CABDINDIKWIL2/network)
+[![Last Commit](https://img.shields.io/github/last-commit/BhinnekaDev/BE-CABDINDIKWIL2?style=flat-square)](https://github.com/BhinnekaDev/BE-CABDINDIKWIL2/commits/master)
+
+![Platform](https://img.shields.io/badge/platform-API-blue?style=flat-square)
+![NestJS](https://img.shields.io/badge/NestJS-9-red?logo=nestjs\&style=flat-square)
+![TypeScript](https://img.shields.io/badge/TypeScript-4.x-3178C6?logo=typescript\&logoColor=white\&style=flat-square)
+![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3FCF8E?logo=supabase\&style=flat-square)
+
 ---
 
 ## ⚙️ Teknologi
