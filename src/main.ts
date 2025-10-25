@@ -69,7 +69,7 @@ export async function createNestApp() {
 }
 
 // =====================
-// Local development
+// Local dev server
 // =====================
 if (process.env.LOCAL === 'true') {
   void createNestApp().then(() => {

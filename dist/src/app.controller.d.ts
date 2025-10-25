@@ -1,0 +1,7 @@
+import type { Response } from 'express';
+import { AppService } from '@/app.service';
+export declare class AppController {
+    private readonly appService;
+    constructor(appService: AppService);
+    getLandingPage(res: Response): void;
+}
