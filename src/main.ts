@@ -1,10 +1,16 @@
+import 'dotenv/config';
 import { AppModule } from '@/app.module';
 import { NestFactory } from '@nestjs/core';
+import * as swaggerUi from 'swagger-ui-express';
 import { ValidationPipe } from '@nestjs/common';
+import { ExpressAdapter } from '@nestjs/platform-express';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import express, { Request, Response, NextFunction } from 'express';
 
-async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+const server = express();
+
+async function createApp(): Promise<void> {
+  const app = await NestFactory.create(AppModule, new ExpressAdapter(server));
 
   app.enableCors({
     origin: '*',
@@ -31,8 +37,7 @@ async function bootstrap() {
         type: 'http',
         scheme: 'bearer',
         bearerFormat: 'JWT',
-        description:
-          'Masukkan token akses dari login (Bearer token) untuk mengakses endpoint yang membutuhkan autentikasi',
+        description: 'Bearer token',
       },
       'access-token',
     )
@@ -40,28 +45,33 @@ async function bootstrap() {
 
   const document = SwaggerModule.createDocument(app, config);
 
-  SwaggerModule.setup('docs', app, document, {
-    customSiteTitle: 'BE-CABDINDIKWIL2 API Docs',
-    swaggerOptions: {
-      layout: 'BaseLayout',
-      presets: undefined,
-      persistAuthorization: true,
-    },
-    customCss: `
-      .swagger-ui .topbar { 
-        display: none; 
-      }
-    `,
-  });
+  server.use('/docs', swaggerUi.serve);
+  server.get(
+    '/docs',
+    swaggerUi.setup(document) as unknown as (
+      req: Request,
+      res: Response,
+      next: NextFunction,
+    ) => void,
+  );
 
-  const port = Number(process.env.PORT) || 3000;
-  await app.listen(port);
-
-  console.log(`🚀 Server running at http://localhost:${port}`);
-  console.log(`📘 Swagger Docs available at http://localhost:${port}/docs`);
+  await app.init();
 }
 
-bootstrap().catch((err) => {
-  console.error('Error during bootstrap:', err);
-  process.exit(1);
-});
+if (process.env.LOCAL === 'true') {
+  void createApp()
+    .then(() => {
+      const port = Number(process.env.PORT) || 3000;
+      server.listen(port, () => {
+        console.log(`🚀 Server running at http://localhost:${port}`);
+        console.log(
+          `📘 Swagger Docs available at http://localhost:${port}/docs`,
+        );
+      });
+    })
+    .catch((err: unknown) => console.error(err));
+}
+
+export default (req: Request, res: Response): void => {
+  server(req, res);
+};
