@@ -50,6 +50,7 @@ E-CABDINDIKWIL2/
 │   │   ├── satpen.module.ts
 │   │   ├── satpen.service.ts
 │   │   ├── dto/
+│   │   │   ├── create-satpen.dto.ts
 │   │   │   └── filter-satpen.dto.ts
 │   │   └── interfaces/
 │   │       └── satpen.interface.ts
