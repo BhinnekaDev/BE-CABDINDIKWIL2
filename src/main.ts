@@ -8,64 +8,68 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ValidationPipe, INestApplication } from '@nestjs/common';
 
 const server = express();
-let nestApp: INestApplication | null = null;
+let nestAppPromise: Promise<INestApplication> | null = null;
 
 export async function createNestApp() {
-  if (!nestApp) {
-    const app = await NestFactory.create(AppModule, new ExpressAdapter(server));
+  if (!nestAppPromise) {
+    nestAppPromise = (async () => {
+      const app = await NestFactory.create(
+        AppModule,
+        new ExpressAdapter(server),
+      );
 
-    app.enableCors({
-      origin: '*',
-      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-      credentials: true,
-    });
+      app.enableCors({
+        origin: '*',
+        methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+        credentials: true,
+      });
 
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        forbidNonWhitelisted: false,
-        transform: true,
-      }),
-    );
-
-    if (process.env.LOCAL === 'true') {
-      const config = new DocumentBuilder()
-        .setTitle('Dokumentasi API CAB DINDIK WILAYAH II')
-        .setDescription(
-          'Dokumentasi resmi API untuk sistem Backend Cabang Dinas Pendidikan Wilayah II Kabupaten Rejang Lebong',
-        )
-        .setVersion('1.0')
-        .addBearerAuth(
-          {
-            type: 'http',
-            scheme: 'bearer',
-            bearerFormat: 'JWT',
-            description: 'Bearer token',
-          },
-          'access-token',
-        )
-        .build();
-
-      const document = SwaggerModule.createDocument(app, config);
-
-      server.use(
-        '/docs',
-        swaggerUi.serve,
-        swaggerUi.setup(document, {
-          customCss: `.topbar { display: none }`,
-          swaggerOptions: {
-            docExpansion: 'none',
-            defaultModelsExpandDepth: -1,
-          },
+      app.useGlobalPipes(
+        new ValidationPipe({
+          whitelist: true,
+          forbidNonWhitelisted: false,
+          transform: true,
         }),
       );
-    }
 
-    await app.init();
-    nestApp = app;
+      if (process.env.LOCAL === 'true') {
+        const config = new DocumentBuilder()
+          .setTitle('Dokumentasi API CAB DINDIK WILAYAH II')
+          .setDescription(
+            'Dokumentasi resmi API untuk sistem Backend Cabang Dinas Pendidikan Wilayah II Kabupaten Rejang Lebong',
+          )
+          .setVersion('1.0')
+          .addBearerAuth(
+            {
+              type: 'http',
+              scheme: 'bearer',
+              bearerFormat: 'JWT',
+              description: 'Bearer token',
+            },
+            'access-token',
+          )
+          .build();
+
+        const document = SwaggerModule.createDocument(app, config);
+
+        server.use(
+          '/docs',
+          swaggerUi.serve,
+          swaggerUi.setup(document, {
+            customCss: `.topbar { display: none }`,
+            swaggerOptions: {
+              docExpansion: 'none',
+              defaultModelsExpandDepth: -1,
+            },
+          }),
+        );
+      }
+
+      await app.init();
+      return app;
+    })();
   }
-
-  return nestApp;
+  return nestAppPromise;
 }
 
 // =====================

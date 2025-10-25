@@ -1,7 +1,16 @@
 import { server, createNestApp } from '@/main';
-import { VercelRequest, VercelResponse } from '@vercel/node';
+import type { IncomingMessage, ServerResponse } from 'http';
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  await createNestApp();
-  server(req, res);
+export default async function handler(
+  req: IncomingMessage,
+  res: ServerResponse,
+) {
+  try {
+    await createNestApp();
+    server(req as any, res as any);
+  } catch (error) {
+    console.error('NestJS serverless error:', error);
+    res.statusCode = 500;
+    res.end('Internal Server Error');
+  }
 }
