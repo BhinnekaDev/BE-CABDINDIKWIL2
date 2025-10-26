@@ -17,3 +17,11 @@ export interface Satpen {
   lokasi_id: number;
   created_at: string;
 }
+
+export interface Location {
+  id: number;
+  kelurahan: string;
+  kecamatan: string;
+  kabupaten: string;
+  provinsi: string;
+}

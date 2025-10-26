@@ -3,13 +3,16 @@ import {
   Injectable,
   InternalServerErrorException,
 } from '@nestjs/common';
-import { Satpen } from './interfaces/satpen.interface';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { ParamSatpenDto } from './dto/param-satpen.dto';
 import { CreateSatpenDto } from './dto/create-satpen.dto';
 import { UpdateSatpenDto } from './dto/update-satpen.dto';
 import { FilterSatpenDto } from './dto/filter-satpen.dto';
 import { SatpenView } from './interfaces/satpen.interface';
+import { Satpen, Location } from './interfaces/satpen.interface';
+import { ParamSatpenLocationDto } from './dto/param-satpen-location.dto';
+import { UpdateSatpenLocationDto } from './dto/update-satpen-location.dto';
+import { CreateSatpenLocationDto } from './dto/create-satpen-location.dto';
 import { createSupabaseClientWithUser } from '../../supabase/supabase.client';
 
 @Injectable()
@@ -78,6 +81,27 @@ export class SatpenService {
     return data as Satpen[];
   }
 
+  async createLocation(
+    userJwt: string,
+    CreateSatpenLocationDto: CreateSatpenLocationDto,
+  ): Promise<Location[]> {
+    const { kelurahan, kecamatan, kabupaten, provinsi } =
+      CreateSatpenLocationDto;
+
+    const supabaseWithUser = createSupabaseClientWithUser(userJwt);
+
+    const { data, error } = await supabaseWithUser
+      .from('lokasi')
+      .insert({ kelurahan, kecamatan, kabupaten, provinsi })
+      .select();
+
+    if (error) {
+      throw new InternalServerErrorException(error.message);
+    }
+
+    return data as Location[];
+  }
+
   async updateSatpen(
     userJwt: string,
     paramSatpenDto: ParamSatpenDto,
@@ -101,6 +125,30 @@ export class SatpenService {
     return data as Satpen[];
   }
 
+  async updateLocation(
+    userJwt: string,
+    paramSatpenLocationDto: ParamSatpenLocationDto,
+    updateSatpenLocationDto: UpdateSatpenLocationDto,
+  ): Promise<Location[]> {
+    const { idParam } = paramSatpenLocationDto;
+    const { kelurahan, kecamatan, kabupaten, provinsi } =
+      updateSatpenLocationDto;
+
+    const supabaseWithUser = createSupabaseClientWithUser(userJwt);
+
+    const { data, error } = await supabaseWithUser
+      .from('lokasi')
+      .update({ kelurahan, kecamatan, kabupaten, provinsi })
+      .eq('id', idParam)
+      .select();
+
+    if (error) {
+      throw new InternalServerErrorException(error.message);
+    }
+
+    return data as Location[];
+  }
+
   async deleteSatpen(userJwt: string, paramSatpenDto: ParamSatpenDto) {
     const { npsnParam } = paramSatpenDto;
 
@@ -117,5 +165,26 @@ export class SatpenService {
     }
 
     return data as Satpen[];
+  }
+
+  async deleteLocation(
+    userJwt: string,
+    paramSatpenLocationDto: ParamSatpenLocationDto,
+  ) {
+    const { idParam } = paramSatpenLocationDto;
+
+    const supabaseWithUser = createSupabaseClientWithUser(userJwt);
+
+    const { data, error } = await supabaseWithUser
+      .from('lokasi')
+      .delete()
+      .eq('id', idParam)
+      .select();
+
+    if (error) {
+      throw new InternalServerErrorException(error.message);
+    }
+
+    return data as Location[];
   }
 }
