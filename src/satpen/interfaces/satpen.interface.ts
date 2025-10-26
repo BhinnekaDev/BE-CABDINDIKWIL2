@@ -25,3 +25,8 @@ export interface Location {
   kabupaten: string;
   provinsi: string;
 }
+
+export interface Kind {
+  id: number;
+  nama_jenis: string;
+}
