@@ -31,18 +31,37 @@ Backend ini dibangun menggunakan **NestJS** dan **TypeScript**, menyediakan API 
 ## 📁 Struktur Direktori
 
 ```
-BE-CABDINDIKWIL2/
+E-CABDINDIKWIL2/
+├── api/
+│   └── index.ts
 ├── src/
 │   ├── auth/
 │   │   ├── auth.controller.ts
 │   │   ├── auth.module.ts
 │   │   ├── auth.service.ts
-│   │   ├── guards/
-│   │   │   ├── auth-request.interface.ts
-│   │   │   └── jwt-auth-guard.ts
 │   │   ├── dto/
 │   │   │   ├── login.dto.ts
 │   │   │   └── register.dto.ts
+│   │   └── guards/
+│   │       ├── auth-request.interface.ts
+│   │       └── jwt-auth-guard.ts
+│   ├── satpen/
+│   │   ├── satpen.controller.ts
+│   │   ├── satpen.module.ts
+│   │   ├── satpen.service.ts
+│   │   ├── dto/
+│   │   │   ├── create-satpen-kind.dto.ts
+│   │   │   ├── create-satpen-location.dto.ts
+│   │   │   ├── create-satpen.dto.ts
+│   │   │   ├── filter-satpen.dto.ts
+│   │   │   ├── param-satpen-kind.dto.ts
+│   │   │   ├── param-satpen-location.dto.ts
+│   │   │   ├── param-satpen.dto.ts
+│   │   │   └── update-satpen-kind.dto.ts
+│   │   │   └── update-satpen-location.dto.ts
+│   │   │   └── update-satpen.dto.ts
+│   │   └── interfaces/
+│   │       └── satpen.interface.ts
 │   ├── app.controller.ts
 │   ├── app.module.ts
 │   ├── app.service.ts
@@ -52,6 +71,9 @@ BE-CABDINDIKWIL2/
 │   ├── supabase.module.ts
 │   └── supabase.service.ts
 ├── test/
+├── types/
+│   └── vercel.d.ts
+├── .env.example
 ├── package.json
 ├── tsconfig.json
 └── README.md
