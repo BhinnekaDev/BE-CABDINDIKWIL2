@@ -18,6 +18,23 @@ export interface Satpen {
   created_at: string;
 }
 
+export interface SatpenJoined {
+  npsn: number;
+  nama: string;
+  status: string;
+  alamat?: string;
+  jenis_id?: number;
+  jenis_nama?: string;
+  lokasi_id?: number;
+  lokasi?: {
+    kelurahan?: string;
+    kecamatan?: string;
+    kabupaten?: string;
+    provinsi?: string;
+  };
+  created_at?: string;
+}
+
 export interface Location {
   id: number;
   kelurahan: string;
