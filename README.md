@@ -50,11 +50,14 @@ E-CABDINDIKWIL2/
 │   │   ├── satpen.module.ts
 │   │   ├── satpen.service.ts
 │   │   ├── dto/
+│   │   │   ├── create-satpen-kind.dto.ts
 │   │   │   ├── create-satpen-location.dto.ts
 │   │   │   ├── create-satpen.dto.ts
 │   │   │   ├── filter-satpen.dto.ts
+│   │   │   ├── param-satpen-kind.dto.ts
 │   │   │   ├── param-satpen-location.dto.ts
 │   │   │   ├── param-satpen.dto.ts
+│   │   │   └── update-satpen-kind.dto.ts
 │   │   │   └── update-satpen-location.dto.ts
 │   │   │   └── update-satpen.dto.ts
 │   │   └── interfaces/
