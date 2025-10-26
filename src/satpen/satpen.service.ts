@@ -12,7 +12,12 @@ import { SatpenView } from './interfaces/satpen.interface';
 import { ParamSatpenKindDto } from './dto/param-satpen-kind.dto';
 import { CreateSatpenKindDto } from './dto/create-satpen-kind.dto';
 import { UpdateSatpenKindDto } from './dto/update-satpen-kind.dto';
-import { Kind, Satpen, Location } from './interfaces/satpen.interface';
+import {
+  Kind,
+  Satpen,
+  Location,
+  SatpenJoined,
+} from './interfaces/satpen.interface';
 import { ParamSatpenLocationDto } from './dto/param-satpen-location.dto';
 import { UpdateSatpenLocationDto } from './dto/update-satpen-location.dto';
 import { CreateSatpenLocationDto } from './dto/create-satpen-location.dto';
@@ -30,16 +35,22 @@ export class SatpenService {
    * @returns {Promise<Satpen[]>}
    * @throws {InternalServerErrorException}
    */
-  async getAllSatpen(): Promise<Satpen[]> {
-    const { data, error } = await this.supabase
-      .from('satuan_pendidikan')
-      .select('*');
+  async getAllSatpen(): Promise<SatpenJoined[]> {
+    const { data, error } = await this.supabase.from('satuan_pendidikan')
+      .select(`
+      npsn,
+      nama,
+      status,
+      alamat,
+      jenis_sekolah ( nama_jenis ),
+      lokasi ( kelurahan, kecamatan, kabupaten, provinsi )
+    `);
 
     if (error) {
       throw new InternalServerErrorException(error.message);
     }
 
-    return data as Satpen[];
+    return data as SatpenJoined[];
   }
 
   /**
