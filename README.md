@@ -45,10 +45,18 @@ E-CABDINDIKWIL2/
 │   │   └── guards/
 │   │       ├── auth-request.interface.ts
 │   │       └── jwt-auth-guard.ts
+│   ├── berita/
+│   │   ├── dto/
+│   │   │   ├── create-berita.dto.ts
+│   │   │   ├── filter-berita.dto.ts
+│   │   │   ├── param-berita.dto.ts
+│   │   │   └── update-berita.dto.ts
+│   │   ├── interface/
+│   │   │   └── berita.interface.ts
+│   │   ├── berita.controller.ts
+│   │   ├── berita.module.ts
+│   │   └── berita.service.ts
 │   ├── satpen/
-│   │   ├── satpen.controller.ts
-│   │   ├── satpen.module.ts
-│   │   ├── satpen.service.ts
 │   │   ├── dto/
 │   │   │   ├── create-satpen-kind.dto.ts
 │   │   │   ├── create-satpen-location.dto.ts
@@ -57,11 +65,14 @@ E-CABDINDIKWIL2/
 │   │   │   ├── param-satpen-kind.dto.ts
 │   │   │   ├── param-satpen-location.dto.ts
 │   │   │   ├── param-satpen.dto.ts
-│   │   │   └── update-satpen-kind.dto.ts
-│   │   │   └── update-satpen-location.dto.ts
+│   │   │   ├── update-satpen-kind.dto.ts
+│   │   │   ├── update-satpen-location.dto.ts
 │   │   │   └── update-satpen.dto.ts
-│   │   └── interfaces/
-│   │       └── satpen.interface.ts
+│   │   ├── interfaces/
+│   │   │   └── satpen.interface.ts
+│   │   ├── satpen.controller.ts
+│   │   ├── satpen.module.ts
+│   │   └── satpen.service.ts
 │   ├── app.controller.ts
 │   ├── app.module.ts
 │   ├── app.service.ts

@@ -1,13 +1,14 @@
-import 'dotenv/config';
-import express from 'express';
-import { AppModule } from './app.module';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-import swaggerUi from 'swagger-ui-express';
 import { ExpressAdapter } from '@nestjs/platform-express';
-import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
-import { ValidationPipe, INestApplication } from '@nestjs/common';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import 'dotenv/config';
+import express, { json, urlencoded } from 'express';
+import swaggerUi from 'swagger-ui-express';
+import { AppModule } from './app.module';
 
 const server = express();
+
 let nestAppPromise: Promise<INestApplication> | null = null;
 
 export async function createNestApp() {
@@ -52,6 +53,8 @@ export async function createNestApp() {
 
         const document = SwaggerModule.createDocument(app, config);
 
+        server.use(json({ limit: '2mb' }));
+        server.use(urlencoded({ limit: '2mb', extended: true }));
         server.use(
           '/docs',
           swaggerUi.serve,
