@@ -36,51 +36,56 @@ E-CABDINDIKWIL2/
 │   └── index.ts
 ├── src/
 │   ├── auth/
-│   │   ├── auth.controller.ts
-│   │   ├── auth.module.ts
-│   │   ├── auth.service.ts
-│   │   ├── dto/
-│   │   │   ├── login.dto.ts
-│   │   │   └── register.dto.ts
-│   │   └── guards/
-│   │       ├── auth-request.interface.ts
-│   │       └── jwt-auth-guard.ts
 │   ├── berita/
-│   │   ├── dto/
-│   │   │   ├── create-berita.dto.ts
-│   │   │   ├── filter-berita.dto.ts
-│   │   │   ├── param-berita.dto.ts
-│   │   │   └── update-berita.dto.ts
-│   │   ├── interface/
-│   │   │   └── berita.interface.ts
-│   │   ├── berita.controller.ts
-│   │   ├── berita.module.ts
-│   │   └── berita.service.ts
 │   ├── satpen/
+│   ├── cerita-praktik-baik/
 │   │   ├── dto/
-│   │   │   ├── create-satpen-kind.dto.ts
-│   │   │   ├── create-satpen-location.dto.ts
-│   │   │   ├── create-satpen.dto.ts
-│   │   │   ├── filter-satpen.dto.ts
-│   │   │   ├── param-satpen-kind.dto.ts
-│   │   │   ├── param-satpen-location.dto.ts
-│   │   │   ├── param-satpen.dto.ts
-│   │   │   ├── update-satpen-kind.dto.ts
-│   │   │   ├── update-satpen-location.dto.ts
-│   │   │   └── update-satpen.dto.ts
-│   │   ├── interfaces/
-│   │   │   └── satpen.interface.ts
-│   │   ├── satpen.controller.ts
-│   │   ├── satpen.module.ts
-│   │   └── satpen.service.ts
+│   │   │   ├── create-cerita-praktik-baik.dto.ts
+│   │   │   ├── filter-cerita-praktik-baik.dto.ts
+│   │   │   ├── param-cerita-praktik-baik.dto.ts
+│   │   │   └── update-cerita-praktik-baik.dto.ts
+│   │   ├── interface/
+│   │   │   └── cerita-praktik-baik.interface.ts
+│   │   ├── cerita-praktik-baik.controller.ts
+│   │   ├── cerita-praktik-baik.module.ts
+│   │   └── cerita-praktik-baik.service.ts
+│   ├── inovasi/
+│   │   ├── dto/
+│   │   │   ├── create-inovasi.dto.ts
+│   │   │   ├── filter-inovasi.dto.ts
+│   │   │   ├── param-inovasi.dto.ts
+│   │   │   └── update-inovasi.dto.ts
+│   │   ├── interface/
+│   │   │   └── inovasi.interface.ts
+│   │   ├── inovasi.controller.ts
+│   │   ├── inovasi.module.ts
+│   │   └── inovasi.service.ts
+│   ├── prakata/
+│   │   ├── dto/
+│   │   │   ├── create-prakata.dto.ts
+│   │   │   ├── param-prakata.dto.ts
+│   │   │   └── update-prakata.dto.ts
+│   │   ├── interface/
+│   │   │   └── prakata.interface.ts
+│   │   ├── prakata.controller.ts
+│   │   ├── prakata.module.ts
+│   │   └── prakata.service.ts
+│   ├── seputar-cabdin/
+│   │   ├── dto/
+│   │   │   ├── create-seputar-cabdin.dto.ts
+│   │   │   ├── filter-seputar-cabdin.dto.ts
+│   │   │   ├── param-seputar-cabdin.dto.ts
+│   │   │   └── update-seputar-cabdin.dto.ts
+│   │   ├── interface/
+│   │   │   └── seputar-cabdin.interface.ts
+│   │   ├── seputar-cabdin.controller.ts
+│   │   ├── seputar-cabdin.module.ts
+│   │   └── seputar-cabdin.service.ts
 │   ├── app.controller.ts
 │   ├── app.module.ts
 │   ├── app.service.ts
 │   └── main.ts
 ├── supabase/
-│   ├── supabase.client.ts
-│   ├── supabase.module.ts
-│   └── supabase.service.ts
 ├── test/
 ├── types/
 │   └── vercel.d.ts
