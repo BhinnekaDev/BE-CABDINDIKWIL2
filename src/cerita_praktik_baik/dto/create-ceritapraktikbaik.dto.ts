@@ -56,5 +56,5 @@ export class CreateCeritaPraktikBaikWithGambarDto extends CreateCeritaPraktikBai
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CreateCeritaPraktikBaikGambarDto)
-  url_gambar?: CreateCeritaPraktikBaikGambarDto[];
+  cerita_praktik_baik_gambar?: CreateCeritaPraktikBaikGambarDto[];
 }

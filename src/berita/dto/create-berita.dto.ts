@@ -55,5 +55,5 @@ export class CreateBeritaWithGambarDto extends CreateBeritaDto {
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CreateBeritaGambarDto)
-  url_gambar?: CreateBeritaGambarDto[];
+  berita_gambar?: CreateBeritaGambarDto[];
 }

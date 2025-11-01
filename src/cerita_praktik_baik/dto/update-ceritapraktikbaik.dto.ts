@@ -60,5 +60,5 @@ export class UpdateCeritaPraktikBaikWithGambarDto extends UpdateCeritaPraktikBai
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => UpdateCeritaPraktikBaikGambarDto)
-  url_gambar?: UpdateCeritaPraktikBaikGambarDto[];
+  cerita_praktik_baik_gambar?: UpdateCeritaPraktikBaikGambarDto[];
 }

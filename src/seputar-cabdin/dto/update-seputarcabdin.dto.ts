@@ -60,5 +60,5 @@ export class UpdateSeputarCabdinWithGambarDto extends UpdateSeputarCabdinDto {
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => UpdateSeputarCabdinGambarDto)
-  url_gambar?: UpdateSeputarCabdinGambarDto[];
+  seputar_cabdin_gambar?: UpdateSeputarCabdinGambarDto[];
 }

@@ -162,8 +162,8 @@ export class InovasiService {
 
       const seputarId = inovasiData.id;
 
-      if (createInovasiDto.url_gambar?.length) {
-        const gambar = createInovasiDto.url_gambar[0];
+      if (createInovasiDto.inovasi_gambar?.length) {
+        const gambar = createInovasiDto.inovasi_gambar[0];
 
         const base64 = gambar.url_gambar.split(';base64,').pop();
         const fileExt = gambar.url_gambar.substring(
@@ -309,10 +309,10 @@ export class InovasiService {
       }
 
       if (
-        updateInovasiDto.url_gambar &&
-        updateInovasiDto.url_gambar.length > 0
+        updateInovasiDto.inovasi_gambar &&
+        updateInovasiDto.inovasi_gambar.length > 0
       ) {
-        const gambarBaru = updateInovasiDto.url_gambar[0];
+        const gambarBaru = updateInovasiDto.inovasi_gambar[0];
 
         if (gambarBaru.url_gambar) {
           const { data: gambarLamaList } = await supabaseWithUser
