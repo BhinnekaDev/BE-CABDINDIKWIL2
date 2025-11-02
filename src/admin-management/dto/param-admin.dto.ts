@@ -1,13 +1,14 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsString } from 'class-validator';
+import { IsOptional, IsString } from 'class-validator';
 
 export class ParamAdminDto {
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'ID Admin',
     example: '15019655-5ee3-4e97-b07f-2741b034075d',
   })
   @Type(() => String)
+  @IsOptional()
   @IsString()
-  idParam: string;
+  id?: string;
 }

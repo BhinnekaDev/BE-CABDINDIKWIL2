@@ -24,34 +24,26 @@ export class AdminManagementController {
   ) {}
 
   /**
-   * Get all admins
+   * Get all admins or specific admin by ID
    *
    * @param {string} userJwt
-   * @return All admins
+   * @param {ParamAdminDto} param
+   * @returns adminData
    */
   @Get('')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'Panggil Semua admin' })
-  async getAllAdmins(@Req() req: Request) {
+  @ApiOperation({
+    summary: 'Panggil semua admin atau berdasarkan ID (opsional)',
+  })
+  async getAdmins(@Req() req: Request, @Query() params: ParamAdminDto) {
     const userJwt = req.headers.authorization?.split(' ')[1] || '';
-    return await this.adminManagementService.getAllAdmins(userJwt);
-  }
 
-  /**
-   * Get admin by id
-   *
-   * @param {string} userJwt
-   * @param {ParamAdminDto} param
-   * @return Admin by ID
-   */
-  @Get(':id')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'Panggil admin berdasarkan ID' })
-  async getAdminById(@Req() req: Request, @Query() params: ParamAdminDto) {
-    const userJwt = req.headers.authorization?.split(' ')[1] || '';
-    return await this.adminManagementService.getAdminById(userJwt, params);
+    if (params.id) {
+      return await this.adminManagementService.getAdminById(userJwt, params);
+    } else {
+      return await this.adminManagementService.getAllAdmins(userJwt);
+    }
   }
 
   /**

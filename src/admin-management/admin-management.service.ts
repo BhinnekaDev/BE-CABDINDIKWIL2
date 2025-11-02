@@ -122,7 +122,7 @@ export class AdminManagementService {
       const { data: admin, error: fetchError } = await supabaseWithUser
         .from('admin')
         .select('id, email, role, status_approval, created_at, updated_at')
-        .eq('id', paramAdminDto.idParam)
+        .eq('id', paramAdminDto.id)
         .maybeSingle();
 
       if (fetchError || !admin) {
@@ -185,7 +185,7 @@ export class AdminManagementService {
     const { data: targetAdmin, error: fetchError } = await supabaseWithUser
       .from('admin')
       .select('id, email, status_approval')
-      .eq('id', paramAdminDto.idParam)
+      .eq('id', paramAdminDto.id)
       .single();
 
     if (fetchError || !targetAdmin) {
@@ -222,7 +222,7 @@ export class AdminManagementService {
           updateAdminDto.status_approval ?? targetAdmin.status_approval,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', paramAdminDto.idParam)
+      .eq('id', paramAdminDto.id)
       .select()
       .single();
 
