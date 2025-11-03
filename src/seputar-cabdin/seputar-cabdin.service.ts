@@ -438,7 +438,7 @@ export class SeputarCabdinService {
       }
 
       const { error: deleteGambarError } = await supabaseWithUser
-        .from('seputar_cabdin')
+        .from('seputar_cabdin_gambar')
         .delete()
         .eq('seputar_id', idParam);
 
@@ -448,7 +448,7 @@ export class SeputarCabdinService {
 
       const { data: deletedSeputarcabdin, error: deleteSeputarCabdinError } =
         await supabaseWithUser
-          .from('seputar_cabdin')
+          .from('seputar_cabdin_gambar')
           .delete()
           .eq('id', idParam)
           .select();
