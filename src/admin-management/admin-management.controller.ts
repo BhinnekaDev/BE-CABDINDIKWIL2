@@ -13,6 +13,7 @@ import type { Request } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AdminManagementService } from './admin-management.service';
 
+import { FilterAdminDto } from './dto/filter-admin.dto';
 import { ParamAdminDto } from './dto/param-admin.dto';
 import { UpdateAdminDto } from './dto/update-admin.dto';
 
@@ -66,5 +67,22 @@ export class AdminManagementController {
   ) {
     const userJwt = req.headers.authorization?.split(' ')[1] || '';
     return await this.adminManagementService.updateAdmin(userJwt, params, dto);
+  }
+
+  /**
+   * Get admin by filter
+   *
+   * @param {string} userJwt
+   * @param {FilterAdminDto} dto
+   * @returns adminData
+   * @throws {ForbiddenException | InternalServerErrorException}
+   */
+  @Get('/filter')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Panggil admin berdasarkan filter' })
+  async getAdminByFilter(@Req() req: Request, @Query() dto: FilterAdminDto) {
+    const userJwt = req.headers.authorization?.split(' ')[1] || '';
+    return await this.adminManagementService.getAdminByFilter(userJwt, dto);
   }
 }
