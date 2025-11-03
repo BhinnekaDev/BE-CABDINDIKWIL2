@@ -3,6 +3,7 @@ import {
   Injectable,
   InternalServerErrorException,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { SupabaseClient } from '@supabase/supabase-js';
 import sanitizeHtml from 'sanitize-html';
@@ -204,22 +205,26 @@ export class BeritaService {
         const gambar = createBeritaDto.berita_gambar[0];
         let publicUrl = gambar.url_gambar;
 
-        const isBase64 = gambar.url_gambar?.startsWith('data:image');
+        const isBase64 =
+          typeof gambar.url_gambar === 'string' &&
+          gambar.url_gambar.startsWith('data:image');
 
         if (isBase64) {
-          const base64 = gambar.url_gambar.split(';base64,').pop();
-          const fileExt = gambar.url_gambar.substring(
-            gambar.url_gambar.indexOf('/') + 1,
-            gambar.url_gambar.indexOf(';'),
+          const matches = gambar.url_gambar.match(
+            /^data:image\/(\w+);base64,(.*)$/,
           );
+          if (!matches) {
+            throw new BadRequestException('Format gambar base64 tidak valid.');
+          }
 
-          const fileName = `berita-${Date.now()}-${Math.random()
-            .toString(36)
-            .substring(2)}.${fileExt}`;
+          const fileExt = matches[1];
+          const base64Data = matches[2];
+          const fileBuffer = Buffer.from(base64Data, 'base64');
+          const fileName = `berita-${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
 
           const { error: uploadError } = await supabaseWithUser.storage
             .from('berita')
-            .upload(fileName, Buffer.from(base64!, 'base64'), {
+            .upload(fileName, fileBuffer, {
               contentType: `image/${fileExt}`,
             });
 
@@ -264,7 +269,7 @@ export class BeritaService {
           keterangan,
           dibuat_pada
         )
-      `,
+        `,
         )
         .eq('id', beritaId)
         .single();
