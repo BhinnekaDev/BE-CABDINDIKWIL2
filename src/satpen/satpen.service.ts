@@ -42,7 +42,7 @@ export class SatpenService {
       nama,
       status,
       jenis_sekolah ( nama_jenis ),
-      lokasi ( kelurahan )
+      lokasi ( kelurahan, alamat )
     `);
 
     if (error) {
