@@ -66,13 +66,14 @@ export class AuthService {
     });
 
     if (error) {
+      const message = error.message?.toLowerCase() || '';
+
       if (
-        error.message.includes('Email not confirmed') ||
-        error.message.includes('Email not confirmed') ||
-        error.message.toLowerCase().includes('email not confirmed')
+        message.includes('email not confirmed') ||
+        message.includes('email not verified')
       ) {
         throw new ForbiddenException(
-          'Email Anda belum diverifikasi. Silakan cek kotak masuk Anda.',
+          'Alamat email Anda belum terverifikasi. Mohon periksa kotak masuk atau folder spam untuk menyelesaikan proses verifikasi akun.',
         );
       }
 
@@ -95,13 +96,25 @@ export class AuthService {
 
     if (adminError || !adminData) {
       throw new UnauthorizedException(
-        'Akun tidak ditemukan di tabel admin. Hubungi Superadmin.',
+        'Data akun Anda tidak ditemukan dalam sistem administrator. Silakan menghubungi Superadmin untuk konfirmasi lebih lanjut.',
       );
     }
 
-    if (adminData.status_approval !== 'Approved') {
+    if (!user.email_confirmed_at) {
       throw new ForbiddenException(
-        'Akun Anda belum disetujui oleh Superadmin. Silakan tunggu konfirmasi.',
+        'Alamat email Anda belum terverifikasi. Silakan periksa kotak masuk atau folder spam untuk melakukan verifikasi.',
+      );
+    }
+
+    if (adminData.status_approval === 'Pending') {
+      throw new ForbiddenException(
+        'Akun Anda saat ini belum mendapatkan persetujuan dari Superadmin. Mohon menunggu proses verifikasi lebih lanjut.',
+      );
+    }
+
+    if (adminData.status_approval === 'Rejected') {
+      throw new ForbiddenException(
+        'Permohonan akun Anda telah ditolak oleh Superadmin. Silakan hubungi pihak terkait untuk informasi lebih lanjut.',
       );
     }
 
@@ -114,7 +127,7 @@ export class AuthService {
         email: user.email,
         role: adminData.role,
         status_approval: adminData.status_approval,
-        user_metadata: user.user_metadata || {},
+        user_metadata: user.user_metadata,
       },
     };
   }
