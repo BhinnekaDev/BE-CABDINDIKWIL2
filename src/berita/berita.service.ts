@@ -3,6 +3,7 @@ import {
   Injectable,
   InternalServerErrorException,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { SupabaseClient } from '@supabase/supabase-js';
 import sanitizeHtml from 'sanitize-html';
@@ -155,8 +156,9 @@ export class BeritaService {
     const supabaseWithUser = createSupabaseClientWithUser(userJwt);
 
     try {
-      let isiHTML = createBeritaDto.isi ?? '';
+      const isiHTML = createBeritaDto.isi ?? '';
 
+      // 🧹 Sanitize konten HTML untuk keamanan
       const sanitizedIsi = sanitizeHtml(isiHTML, {
         allowedTags: [
           'b',
@@ -185,6 +187,7 @@ export class BeritaService {
         allowProtocolRelative: false,
       });
 
+      // 📝 Simpan berita utama
       const { data: beritaData, error: beritaError } = await supabaseWithUser
         .from('berita')
         .insert({
@@ -201,47 +204,32 @@ export class BeritaService {
 
       const beritaId = beritaData.id;
 
+      // 🖼️ Jika ada gambar dari FE, cukup simpan URL-nya
       if (createBeritaDto.berita_gambar?.length) {
         const gambar = createBeritaDto.berita_gambar[0];
 
-        const base64 = gambar.url_gambar.split(';base64,').pop();
-        const fileExt = gambar.url_gambar.substring(
-          gambar.url_gambar.indexOf('/') + 1,
-          gambar.url_gambar.indexOf(';'),
-        );
+        // ✅ Validasi bahwa URL gambar sudah benar (bukan base64)
+        if (gambar.url_gambar?.startsWith('http')) {
+          const { error: insertGambarError } = await supabaseWithUser
+            .from('berita_gambar')
+            .insert({
+              berita_id: beritaId,
+              url_gambar: gambar.url_gambar, // langsung URL dari FE
+              keterangan: gambar.keterangan ?? null,
+            });
 
-        const fileName = `berita-${Date.now()}-${Math.random()
-          .toString(36)
-          .substring(2)}.${fileExt}`;
-
-        const { error: uploadError } = await supabaseWithUser.storage
-          .from('berita')
-          .upload(fileName, Buffer.from(base64!, 'base64'), {
-            contentType: `image/${fileExt}`,
-          });
-
-        if (uploadError) {
-          throw new InternalServerErrorException(uploadError.message);
-        }
-
-        const { data: urlData } = supabaseWithUser.storage
-          .from('berita')
-          .getPublicUrl(fileName);
-
-        const { error: insertGambarError } = await supabaseWithUser
-          .from('berita_gambar')
-          .insert({
-            berita_id: beritaId,
-            url_gambar: urlData.publicUrl,
-            keterangan: gambar.keterangan ?? null,
-          });
-
-        if (insertGambarError) {
-          throw new InternalServerErrorException(insertGambarError.message);
+          if (insertGambarError) {
+            throw new InternalServerErrorException(insertGambarError.message);
+          }
+        } else {
+          throw new BadRequestException(
+            'URL gambar tidak valid atau bukan URL publik Supabase.',
+          );
         }
       }
 
-      const { data: beritaJoined } = await supabaseWithUser
+      // 🔄 Ambil kembali berita beserta gambar-nya
+      const { data: beritaJoined, error: joinError } = await supabaseWithUser
         .from('berita')
         .select(
           `
@@ -262,6 +250,10 @@ export class BeritaService {
         )
         .eq('id', beritaId)
         .single();
+
+      if (joinError) {
+        throw new InternalServerErrorException(joinError.message);
+      }
 
       return beritaJoined as BeritaJoined;
     } catch (err: any) {
@@ -284,6 +276,7 @@ export class BeritaService {
     const supabaseWithUser = createSupabaseClientWithUser(userJwt);
 
     try {
+      // 🔎 Cek apakah berita ada
       const { data: berita, error: beritaError } = await supabaseWithUser
         .from('berita')
         .select('*, berita_gambar(id, url_gambar, keterangan)')
@@ -294,6 +287,7 @@ export class BeritaService {
         throw new NotFoundException('Berita tidak ditemukan');
       }
 
+      // 🧹 Siapkan data baru
       const judulBaru = updateBeritaDto.judul?.trim() || berita.judul;
       const penulisBaru = updateBeritaDto.penulis?.trim() || berita.penulis;
       const isiBaru = updateBeritaDto.isi
@@ -325,6 +319,7 @@ export class BeritaService {
           })
         : berita.isi;
 
+      // ✏️ Update berita utama
       const { error: updateError } = await supabaseWithUser
         .from('berita')
         .update({
@@ -335,77 +330,62 @@ export class BeritaService {
         })
         .eq('id', idParam);
 
-      if (updateError)
+      if (updateError) {
         throw new InternalServerErrorException(updateError.message);
+      }
 
-      if (
-        updateBeritaDto.berita_gambar &&
-        updateBeritaDto.berita_gambar.length > 0
-      ) {
+      // 🖼️ Update gambar (kalau dikirim)
+      if (updateBeritaDto.berita_gambar?.length) {
         const gambarBaru = updateBeritaDto.berita_gambar[0];
         const gambarLama = berita.berita_gambar?.[0];
 
-        if (gambarBaru.url_gambar?.startsWith('data:image')) {
-          const base64 = gambarBaru.url_gambar.split(';base64,').pop();
-          const fileExt = gambarBaru.url_gambar.substring(
-            gambarBaru.url_gambar.indexOf('/') + 1,
-            gambarBaru.url_gambar.indexOf(';'),
-          );
-          const fileName = `berita-${Date.now()}-${Math.random()
-            .toString(36)
-            .substring(2)}.${fileExt}`;
-
-          const { error: uploadError } = await supabaseWithUser.storage
-            .from('berita')
-            .upload(fileName, Buffer.from(base64!, 'base64'), {
-              contentType: `image/${fileExt}`,
-              upsert: false,
-            });
-
-          if (uploadError)
-            throw new InternalServerErrorException(uploadError.message);
-
-          const { data: publicUrlData } = supabaseWithUser.storage
-            .from('berita')
-            .getPublicUrl(fileName);
-
-          if (gambarLama?.url_gambar) {
-            const oldFileName = gambarLama.url_gambar.split('/').pop();
-            if (oldFileName) {
-              await supabaseWithUser.storage
-                .from('berita')
-                .remove([oldFileName]);
-            }
-          }
-
+        // ✅ Validasi URL publik (bukan base64)
+        if (gambarBaru.url_gambar?.startsWith('http')) {
           if (gambarLama) {
-            await supabaseWithUser
+            // Update gambar yang sudah ada
+            const { error: updateGambarError } = await supabaseWithUser
               .from('berita_gambar')
               .update({
-                url_gambar: publicUrlData.publicUrl,
-                keterangan:
-                  gambarBaru.keterangan?.trim() ||
-                  gambarLama.keterangan ||
-                  null,
+                url_gambar: gambarBaru.url_gambar,
+                keterangan: gambarBaru.keterangan?.trim() ?? null,
+                diperbarui_pada: new Date().toISOString(),
               })
               .eq('id', gambarLama.id);
+
+            if (updateGambarError) {
+              throw new InternalServerErrorException(updateGambarError.message);
+            }
           } else {
-            await supabaseWithUser.from('berita_gambar').insert({
-              berita_id: idParam,
-              url_gambar: publicUrlData.publicUrl,
-              keterangan: gambarBaru.keterangan?.trim() || null,
-            });
+            // Tambahkan gambar baru
+            const { error: insertGambarError } = await supabaseWithUser
+              .from('berita_gambar')
+              .insert({
+                berita_id: idParam,
+                url_gambar: gambarBaru.url_gambar,
+                keterangan: gambarBaru.keterangan?.trim() ?? null,
+              });
+
+            if (insertGambarError) {
+              throw new InternalServerErrorException(insertGambarError.message);
+            }
           }
         } else if (gambarBaru.keterangan && gambarLama) {
-          await supabaseWithUser
+          // Hanya ubah keterangan tanpa ubah URL
+          const { error: updateKetError } = await supabaseWithUser
             .from('berita_gambar')
             .update({
               keterangan: gambarBaru.keterangan.trim(),
+              diperbarui_pada: new Date().toISOString(),
             })
             .eq('id', gambarLama.id);
+
+          if (updateKetError) {
+            throw new InternalServerErrorException(updateKetError.message);
+          }
         }
       }
 
+      // 🔄 Ambil data berita yang sudah diperbarui
       const { data: updated, error: selectError } = await supabaseWithUser
         .from('berita')
         .select(
@@ -428,8 +408,9 @@ export class BeritaService {
         .eq('id', idParam)
         .single();
 
-      if (selectError)
+      if (selectError) {
         throw new InternalServerErrorException(selectError.message);
+      }
 
       return updated as BeritaJoined;
     } catch (err: any) {
