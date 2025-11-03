@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   Inject,
   Injectable,
   InternalServerErrorException,
@@ -57,6 +56,48 @@ export class InovasiService {
   }
 
   /**
+   * Get inovasi by ID
+   *
+   * @returns {Promise<InovasiJoined>}
+   * @throws {NotFoundException | InternalServerErrorException}
+   */
+  async getInovasiById(
+    paramInovasiDto: ParamInovasiDto,
+  ): Promise<InovasiJoined> {
+    const { idParam } = paramInovasiDto;
+
+    const { data, error } = await this.supabase
+      .from('inovasi')
+      .select(
+        `
+        id,
+        judul,
+        penulis,
+        tanggal_diterbitkan,
+        isi,
+        dibuat_pada,
+        diperbarui_pada,
+        inovasi_gambar (
+          id,
+          url_gambar,
+          keterangan,
+          dibuat_pada
+        )`,
+      )
+      .eq('id', idParam);
+
+    if (error) {
+      throw new InternalServerErrorException(error.message);
+    }
+
+    if (data.length === 0) {
+      throw new NotFoundException('Inovasi tidak ditemukan.');
+    }
+
+    return data[0] as InovasiJoined;
+  }
+
+  /**
    * Get all inovasi dari view dengan filter judul / penulis / tanggal_diterbitkan
    *
    * @returns {Promise<InovasiView[]>}
@@ -65,7 +106,7 @@ export class InovasiService {
   async getFilteredInovasi(filter: FilterInovasiDto): Promise<InovasiView[]> {
     const { judul, penulis, tanggal_diterbitkan } = filter;
 
-    let query = this.supabase.from('inovasi_gambar').select('*');
+    let query = this.supabase.from('inovasi_with_gambar').select('*');
 
     if (judul) {
       query = query.ilike('judul', `%${judul}%`);
@@ -160,10 +201,10 @@ export class InovasiService {
         throw new InternalServerErrorException(inovasiError.message);
       }
 
-      const seputarId = inovasiData.id;
+      const inovasiId = inovasiData.id;
 
-      if (createInovasiDto.url_gambar?.length) {
-        const gambar = createInovasiDto.url_gambar[0];
+      if (createInovasiDto.inovasi_gambar?.length) {
+        const gambar = createInovasiDto.inovasi_gambar[0];
 
         const base64 = gambar.url_gambar.split(';base64,').pop();
         const fileExt = gambar.url_gambar.substring(
@@ -192,7 +233,7 @@ export class InovasiService {
         const { error: insertGambarError } = await supabaseWithUser
           .from('inovasi_gambar')
           .insert({
-            cerita_id: seputarId,
+            inovasi_id: inovasiId,
             url_gambar: urlData.publicUrl,
             keterangan: gambar.keterangan ?? null,
           });
@@ -221,7 +262,7 @@ export class InovasiService {
         )
       `,
         )
-        .eq('id', seputarId)
+        .eq('id', inovasiId)
         .single();
 
       return inovasiJoined as InovasiJoined;
@@ -234,7 +275,7 @@ export class InovasiService {
    * Update inovasi
    *
    * @returns {Promise<InovasiJoined>}
-   * @throws {InternalServerErrorException, NotFoundException, BadRequestException}
+   * @throws {InternalServerErrorException, NotFoundException}
    */
   async updateInovasi(
     userJwt: string,
@@ -245,151 +286,152 @@ export class InovasiService {
     const supabaseWithUser = createSupabaseClientWithUser(userJwt);
 
     try {
-      const numericId = Number(idParam);
-      if (isNaN(numericId)) {
-        throw new BadRequestException('ID tidak valid');
-      }
-
-      const { data: inovasi } = await supabaseWithUser
+      const { data: inovasi, error: inovasiError } = await supabaseWithUser
         .from('inovasi')
-        .select('*')
-        .eq('id', numericId)
+        .select('*, inovasi_gambar(id, url_gambar, keterangan)')
+        .eq('id', idParam)
         .single();
 
-      if (!inovasi) {
+      if (inovasiError || !inovasi) {
         throw new NotFoundException('Inovasi tidak ditemukan');
       }
 
-      let sanitizedIsi = updateInovasiDto.isi;
-      if (sanitizedIsi) {
-        sanitizedIsi = sanitizeHtml(sanitizedIsi, {
-          allowedTags: [
-            'b',
-            'i',
-            'em',
-            'strong',
-            'a',
-            'p',
-            'ul',
-            'ol',
-            'li',
-            'br',
-            'h1',
-            'h2',
-            'h3',
-            'h4',
-            'h5',
-            'h6',
-            'img',
-          ],
-          allowedAttributes: {
-            a: ['href', 'name', 'target'],
-            img: ['src', 'alt', 'title'],
-          },
-          allowedSchemes: ['http', 'https', 'data'],
-        });
-      }
+      const judulBaru = updateInovasiDto.judul?.trim() || inovasi.judul;
+      const penulisBaru = updateInovasiDto.penulis?.trim() || inovasi.penulis;
+      const isiBaru = updateInovasiDto.isi
+        ? sanitizeHtml(updateInovasiDto.isi, {
+            allowedTags: [
+              'b',
+              'i',
+              'em',
+              'strong',
+              'a',
+              'p',
+              'ul',
+              'ol',
+              'li',
+              'br',
+              'h1',
+              'h2',
+              'h3',
+              'h4',
+              'h5',
+              'h6',
+              'img',
+            ],
+            allowedAttributes: {
+              a: ['href', 'name', 'target'],
+              img: ['src', 'alt', 'title'],
+            },
+            allowedSchemes: ['http', 'https', 'data'],
+          })
+        : inovasi.isi;
 
       const { error: updateError } = await supabaseWithUser
         .from('inovasi')
         .update({
-          ...(updateInovasiDto.judul && {
-            judul: updateInovasiDto.judul,
-          }),
-          ...(updateInovasiDto.penulis && {
-            penulis: updateInovasiDto.penulis,
-          }),
-          ...(sanitizedIsi && { isi: sanitizedIsi }),
+          judul: judulBaru,
+          penulis: penulisBaru,
+          isi: isiBaru,
           diperbarui_pada: new Date().toISOString(),
         })
         .eq('id', idParam);
 
-      if (updateError) {
+      if (updateError)
         throw new InternalServerErrorException(updateError.message);
-      }
 
       if (
-        updateInovasiDto.url_gambar &&
-        updateInovasiDto.url_gambar.length > 0
+        updateInovasiDto.inovasi_gambar &&
+        updateInovasiDto.inovasi_gambar.length > 0
       ) {
-        const gambarBaru = updateInovasiDto.url_gambar[0];
+        const gambarBaru = updateInovasiDto.inovasi_gambar[0];
+        const gambarLama = inovasi.inovasi_gambar?.[0];
 
-        if (gambarBaru.url_gambar) {
-          const { data: gambarLamaList } = await supabaseWithUser
-            .from('inovasi_gambar')
-            .select('*')
-            .eq('cerita_id', idParam);
-
-          // 4.2 Hapus semua file di storage & row tabel
-          if (gambarLamaList && gambarLamaList.length > 0) {
-            const fileNamesLama = gambarLamaList
-              .map((g) => g.url_gambar?.split('/').pop())
-              .filter((f) => !!f);
-
-            if (fileNamesLama.length > 0) {
-              await supabaseWithUser.storage
-                .from('inovasi')
-                .remove(fileNamesLama);
-            }
-
-            await supabaseWithUser
-              .from('inovasi_gambar')
-              .delete()
-              .eq('cerita_id', idParam);
-          }
-
+        if (gambarBaru.url_gambar?.startsWith('data:image')) {
           const base64 = gambarBaru.url_gambar.split(';base64,').pop();
           const fileExt = gambarBaru.url_gambar.substring(
             gambarBaru.url_gambar.indexOf('/') + 1,
             gambarBaru.url_gambar.indexOf(';'),
           );
-          const fileNameBaru = `inovasi-${Date.now()}-${Math.random()
+          const fileName = `inovasi-${Date.now()}-${Math.random()
             .toString(36)
             .substring(2)}.${fileExt}`;
 
           const { error: uploadError } = await supabaseWithUser.storage
             .from('inovasi')
-            .upload(fileNameBaru, Buffer.from(base64!, 'base64'), {
+            .upload(fileName, Buffer.from(base64!, 'base64'), {
               contentType: `image/${fileExt}`,
+              upsert: false,
             });
 
-          if (uploadError) {
+          if (uploadError)
             throw new InternalServerErrorException(uploadError.message);
+
+          const { data: publicUrlData } = supabaseWithUser.storage
+            .from('inovasi')
+            .getPublicUrl(fileName);
+
+          if (gambarLama?.url_gambar) {
+            const oldFileName = gambarLama.url_gambar.split('/').pop();
+            if (oldFileName) {
+              await supabaseWithUser.storage
+                .from('inovasi')
+                .remove([oldFileName]);
+            }
           }
 
-          const { data: urlData } = supabaseWithUser.storage
-            .from('inovasi')
-            .getPublicUrl(fileNameBaru);
-
-          await supabaseWithUser.from('inovasi_gambar').insert({
-            cerita_id: idParam,
-            url_gambar: urlData.publicUrl,
-            keterangan: gambarBaru.keterangan ?? null,
-          });
+          if (gambarLama) {
+            await supabaseWithUser
+              .from('inovasi_gambar')
+              .update({
+                url_gambar: publicUrlData.publicUrl,
+                keterangan:
+                  gambarBaru.keterangan?.trim() ||
+                  gambarLama.keterangan ||
+                  null,
+              })
+              .eq('id', gambarLama.id);
+          } else {
+            await supabaseWithUser.from('inovasi_gambar').insert({
+              inovasi_id: idParam,
+              url_gambar: publicUrlData.publicUrl,
+              keterangan: gambarBaru.keterangan?.trim() || null,
+            });
+          }
+        } else if (gambarBaru.keterangan && gambarLama) {
+          await supabaseWithUser
+            .from('inovasi_gambar')
+            .update({
+              keterangan: gambarBaru.keterangan.trim(),
+            })
+            .eq('id', gambarLama.id);
         }
       }
 
-      const { data: updated } = await supabaseWithUser
+      const { data: updated, error: selectError } = await supabaseWithUser
         .from('inovasi')
         .select(
           `
-        id,
-        judul,
-        penulis,
-        tanggal_diterbitkan,
-        isi,
-        dibuat_pada,
-        diperbarui_pada,
-        inovasi_gambar (
           id,
-          url_gambar,
-          keterangan,
-          dibuat_pada
-        )
-      `,
+          judul,
+          penulis,
+          tanggal_diterbitkan,
+          isi,
+          dibuat_pada,
+          diperbarui_pada,
+          inovasi_gambar (
+            id,
+            url_gambar,
+            keterangan,
+            dibuat_pada
+          )
+        `,
         )
         .eq('id', idParam)
         .single();
+
+      if (selectError)
+        throw new InternalServerErrorException(selectError.message);
 
       return updated as InovasiJoined;
     } catch (err: any) {
@@ -470,7 +512,7 @@ export class InovasiService {
       const { error: deleteGambarError } = await supabaseWithUser
         .from('inovasi_gambar')
         .delete()
-        .eq('cerita_id', idParam);
+        .eq('inovasi_id', idParam);
 
       if (deleteGambarError) {
         throw new InternalServerErrorException(deleteGambarError.message);

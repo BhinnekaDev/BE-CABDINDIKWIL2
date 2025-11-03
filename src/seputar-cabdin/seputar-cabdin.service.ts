@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   Inject,
   Injectable,
   InternalServerErrorException,
@@ -168,8 +167,8 @@ export class SeputarCabdinService {
 
       const seputarId = seputarcabdinData.id;
 
-      if (createSeputarCabdinDto.url_gambar?.length) {
-        const gambar = createSeputarCabdinDto.url_gambar[0];
+      if (createSeputarCabdinDto.seputar_cabdin_gambar?.length) {
+        const gambar = createSeputarCabdinDto.seputar_cabdin_gambar[0];
 
         const base64 = gambar.url_gambar.split(';base64,').pop();
         const fileExt = gambar.url_gambar.substring(
@@ -196,7 +195,7 @@ export class SeputarCabdinService {
           .getPublicUrl(fileName);
 
         const { error: insertGambarError } = await supabaseWithUser
-          .from('seputar_cabdin_gambar')
+          .from('seputar_cabdin')
           .insert({
             seputar_id: seputarId,
             url_gambar: urlData.publicUrl,
@@ -251,61 +250,67 @@ export class SeputarCabdinService {
     const supabaseWithUser = createSupabaseClientWithUser(userJwt);
 
     try {
-      const numericId = Number(idParam);
-      if (isNaN(numericId)) {
-        throw new BadRequestException('ID tidak valid');
+      const { data: seputarcabdinData, error: seputarcabdinError } =
+        await supabaseWithUser
+          .from('seputar_cabdin')
+          .select('*, seputar_cabdin_gambar(id, url_gambar, keterangan)')
+          .eq('id', idParam)
+          .single();
+
+      if (seputarcabdinError || !seputarcabdinData) {
+        throw new NotFoundException('Seputar cabdin tidak ditemukan');
       }
 
-      const { data: seputarcabdin } = await supabaseWithUser
-        .from('seputar_cabdin')
-        .select('*')
-        .eq('id', numericId)
-        .single();
+      const gambarLama = seputarcabdinData.seputar_cabdin_gambar
+        ? Array.isArray(seputarcabdinData.seputar_cabdin_gambar)
+          ? seputarcabdinData.seputar_cabdin_gambar[0]
+          : seputarcabdinData.seputar_cabdin_gambar
+        : null;
 
-      if (!seputarcabdin) {
-        throw new NotFoundException('Seputarcabdin tidak ditemukan');
-      }
-
-      let sanitizedIsi = updateSeputarCabdinDto.isi;
-      if (sanitizedIsi) {
-        sanitizedIsi = sanitizeHtml(sanitizedIsi, {
-          allowedTags: [
-            'b',
-            'i',
-            'em',
-            'strong',
-            'a',
-            'p',
-            'ul',
-            'ol',
-            'li',
-            'br',
-            'h1',
-            'h2',
-            'h3',
-            'h4',
-            'h5',
-            'h6',
-            'img',
-          ],
-          allowedAttributes: {
-            a: ['href', 'name', 'target'],
-            img: ['src', 'alt', 'title'],
-          },
-          allowedSchemes: ['http', 'https', 'data'],
-        });
-      }
+      const judulBaru =
+        updateSeputarCabdinDto.judul?.trim() !== ''
+          ? updateSeputarCabdinDto.judul
+          : seputarcabdinData.judul;
+      const penulisBaru =
+        updateSeputarCabdinDto.penulis?.trim() !== ''
+          ? updateSeputarCabdinDto.penulis
+          : seputarcabdinData.penulis;
+      const isiBaru =
+        updateSeputarCabdinDto.isi?.trim() !== ''
+          ? sanitizeHtml(updateSeputarCabdinDto.isi, {
+              allowedTags: [
+                'b',
+                'i',
+                'em',
+                'strong',
+                'a',
+                'p',
+                'ul',
+                'ol',
+                'li',
+                'br',
+                'h1',
+                'h2',
+                'h3',
+                'h4',
+                'h5',
+                'h6',
+                'img',
+              ],
+              allowedAttributes: {
+                a: ['href', 'name', 'target'],
+                img: ['src', 'alt', 'title'],
+              },
+              allowedSchemes: ['http', 'https', 'data'],
+            })
+          : seputarcabdinData.isi;
 
       const { error: updateError } = await supabaseWithUser
         .from('seputar_cabdin')
         .update({
-          ...(updateSeputarCabdinDto.judul && {
-            judul: updateSeputarCabdinDto.judul,
-          }),
-          ...(updateSeputarCabdinDto.penulis && {
-            penulis: updateSeputarCabdinDto.penulis,
-          }),
-          ...(sanitizedIsi && { isi: sanitizedIsi }),
+          judul: judulBaru,
+          penulis: penulisBaru,
+          isi: isiBaru,
           diperbarui_pada: new Date().toISOString(),
         })
         .eq('id', idParam);
@@ -314,36 +319,36 @@ export class SeputarCabdinService {
         throw new InternalServerErrorException(updateError.message);
       }
 
-      if (
-        updateSeputarCabdinDto.url_gambar &&
-        updateSeputarCabdinDto.url_gambar.length > 0
-      ) {
-        const gambarBaru = updateSeputarCabdinDto.url_gambar[0];
+      const gambarBaru =
+        updateSeputarCabdinDto.seputar_cabdin_gambar &&
+        updateSeputarCabdinDto.seputar_cabdin_gambar.length
+          ? updateSeputarCabdinDto.seputar_cabdin_gambar[0]
+          : null;
 
-        if (gambarBaru.url_gambar) {
-          const { data: gambarLamaList } = await supabaseWithUser
+      if (gambarBaru) {
+        if (
+          typeof gambarBaru.url_gambar === 'string' &&
+          !gambarBaru.url_gambar.startsWith('data:image')
+        ) {
+          const { error: updateKeteranganError } = await supabaseWithUser
             .from('seputar_cabdin_gambar')
-            .select('*')
-            .eq('seputar_id', idParam);
+            .update({
+              keterangan:
+                (gambarBaru.keterangan ?? '').trim() !== ''
+                  ? gambarBaru.keterangan
+                  : (gambarLama?.keterangan ?? null),
+            })
+            .eq('id', gambarLama?.id);
 
-          // 4.2 Hapus semua file di storage & row tabel
-          if (gambarLamaList && gambarLamaList.length > 0) {
-            const fileNamesLama = gambarLamaList
-              .map((g) => g.url_gambar?.split('/').pop())
-              .filter((f) => !!f);
-
-            if (fileNamesLama.length > 0) {
-              await supabaseWithUser.storage
-                .from('seputar_cabdin')
-                .remove(fileNamesLama);
-            }
-
-            await supabaseWithUser
-              .from('seputar_cabdin_gambar')
-              .delete()
-              .eq('seputar_id', idParam);
+          if (updateKeteranganError) {
+            throw new InternalServerErrorException(
+              updateKeteranganError.message,
+            );
           }
-
+        } else if (
+          typeof gambarBaru.url_gambar === 'string' &&
+          gambarBaru.url_gambar.startsWith('data:image')
+        ) {
           const base64 = gambarBaru.url_gambar.split(';base64,').pop();
           const fileExt = gambarBaru.url_gambar.substring(
             gambarBaru.url_gambar.indexOf('/') + 1,
@@ -367,35 +372,74 @@ export class SeputarCabdinService {
             .from('seputar_cabdin')
             .getPublicUrl(fileNameBaru);
 
-          await supabaseWithUser.from('seputar_cabdin_gambar').insert({
-            seputar_id: idParam,
-            url_gambar: urlData.publicUrl,
-            keterangan: gambarBaru.keterangan ?? null,
-          });
+          if (gambarLama) {
+            if (gambarLama.url_gambar) {
+              const fileNameLama = gambarLama.url_gambar.split('/').pop();
+              if (fileNameLama) {
+                await supabaseWithUser.storage
+                  .from('seputar_cabdin')
+                  .remove([fileNameLama]);
+              }
+            }
+
+            const { error: updateGambarError } = await supabaseWithUser
+              .from('seputar_cabdin_gambar')
+              .update({
+                url_gambar: urlData.publicUrl,
+                keterangan:
+                  gambarBaru.keterangan && gambarBaru.keterangan.trim() !== ''
+                    ? gambarBaru.keterangan
+                    : gambarLama.keterangan,
+              })
+              .eq('id', gambarLama.id);
+
+            if (updateGambarError) {
+              throw new InternalServerErrorException(updateGambarError.message);
+            }
+          } else {
+            const { error: insertError } = await supabaseWithUser
+              .from('seputar_cabdin_gambar')
+              .insert({
+                seputar_id: idParam,
+                url_gambar: urlData.publicUrl,
+                keterangan:
+                  gambarBaru.keterangan && gambarBaru.keterangan.trim() !== ''
+                    ? gambarBaru.keterangan
+                    : null,
+              });
+
+            if (insertError) {
+              throw new InternalServerErrorException(insertError.message);
+            }
+          }
         }
       }
 
-      const { data: updated } = await supabaseWithUser
+      const { data: updated, error: selectError } = await supabaseWithUser
         .from('seputar_cabdin')
         .select(
           `
-        id,
-        judul,
-        penulis,
-        tanggal_diterbitkan,
-        isi,
-        dibuat_pada,
-        diperbarui_pada,
-        seputar_cabdin_gambar (
           id,
-          url_gambar,
-          keterangan,
-          dibuat_pada
-        )
-      `,
+          judul,
+          penulis,
+          tanggal_diterbitkan,
+          isi,
+          dibuat_pada,
+          diperbarui_pada,
+          seputar_cabdin_gambar (
+            id,
+            url_gambar,
+            keterangan,
+            dibuat_pada
+          )
+        `,
         )
         .eq('id', idParam)
         .single();
+
+      if (selectError) {
+        throw new InternalServerErrorException(selectError.message);
+      }
 
       return updated as SeputarCabdinJoined;
     } catch (err: any) {
@@ -474,7 +518,7 @@ export class SeputarCabdinService {
       }
 
       const { error: deleteGambarError } = await supabaseWithUser
-        .from('seputar_cabdin_gambar')
+        .from('seputar_cabdin')
         .delete()
         .eq('seputar_id', idParam);
 

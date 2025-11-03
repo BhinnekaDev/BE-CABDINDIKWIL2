@@ -1,5 +1,5 @@
-import { IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { IsString } from 'class-validator';
 
 export class UpdateSatpenLocationDto {
   @ApiProperty({
@@ -29,4 +29,11 @@ export class UpdateSatpenLocationDto {
   })
   @IsString()
   provinsi: string;
+
+  @ApiProperty({
+    description: 'nama jalan',
+    example: 'jalan-jalan',
+  })
+  @IsString()
+  nama_jalan: string;
 }

@@ -56,6 +56,46 @@ export class BeritaService {
   }
 
   /**
+   * Get berita by ID
+   *
+   * @returns {Promise<BeritaJoined>}
+   * @throws {NotFoundException | InternalServerErrorException}
+   */
+  async getBeritaById(paramBeritaDto: ParamBeritaDto): Promise<BeritaJoined> {
+    const { idParam } = paramBeritaDto;
+
+    const { data, error } = await this.supabase
+      .from('berita')
+      .select(
+        `
+        id,
+        judul,
+        penulis,
+        tanggal_diterbitkan,
+        isi,
+        dibuat_pada,
+        diperbarui_pada,
+        berita_gambar (
+          id,
+          url_gambar,
+          keterangan,
+          dibuat_pada
+        )`,
+      )
+      .eq('id', idParam);
+
+    if (error) {
+      throw new InternalServerErrorException(error.message);
+    }
+
+    if (data.length === 0) {
+      throw new NotFoundException('Berita tidak ditemukan.');
+    }
+
+    return data[0] as BeritaJoined;
+  }
+
+  /**
    * Get all berita dari view dengan filter judul / penulis / tanggal_diterbitkan
    *
    * @returns {Promise<BeritaView[]>}
@@ -161,8 +201,8 @@ export class BeritaService {
 
       const beritaId = beritaData.id;
 
-      if (createBeritaDto.url_gambar?.length) {
-        const gambar = createBeritaDto.url_gambar[0];
+      if (createBeritaDto.berita_gambar?.length) {
+        const gambar = createBeritaDto.berita_gambar[0];
 
         const base64 = gambar.url_gambar.split(';base64,').pop();
         const fileExt = gambar.url_gambar.substring(
@@ -244,52 +284,53 @@ export class BeritaService {
     const supabaseWithUser = createSupabaseClientWithUser(userJwt);
 
     try {
-      const { data: berita } = await supabaseWithUser
+      const { data: berita, error: beritaError } = await supabaseWithUser
         .from('berita')
-        .select('*')
+        .select('*, berita_gambar(id, url_gambar, keterangan)')
         .eq('id', idParam)
         .single();
 
-      if (!berita) {
+      if (beritaError || !berita) {
         throw new NotFoundException('Berita tidak ditemukan');
       }
 
-      let sanitizedIsi = updateBeritaDto.isi;
-      if (sanitizedIsi) {
-        sanitizedIsi = sanitizeHtml(sanitizedIsi, {
-          allowedTags: [
-            'b',
-            'i',
-            'em',
-            'strong',
-            'a',
-            'p',
-            'ul',
-            'ol',
-            'li',
-            'br',
-            'h1',
-            'h2',
-            'h3',
-            'h4',
-            'h5',
-            'h6',
-            'img',
-          ],
-          allowedAttributes: {
-            a: ['href', 'name', 'target'],
-            img: ['src', 'alt', 'title'],
-          },
-          allowedSchemes: ['http', 'https', 'data'],
-        });
-      }
+      const judulBaru = updateBeritaDto.judul?.trim() || berita.judul;
+      const penulisBaru = updateBeritaDto.penulis?.trim() || berita.penulis;
+      const isiBaru = updateBeritaDto.isi
+        ? sanitizeHtml(updateBeritaDto.isi, {
+            allowedTags: [
+              'b',
+              'i',
+              'em',
+              'strong',
+              'a',
+              'p',
+              'ul',
+              'ol',
+              'li',
+              'br',
+              'h1',
+              'h2',
+              'h3',
+              'h4',
+              'h5',
+              'h6',
+              'img',
+            ],
+            allowedAttributes: {
+              a: ['href', 'name', 'target'],
+              img: ['src', 'alt', 'title'],
+            },
+            allowedSchemes: ['http', 'https', 'data'],
+          })
+        : berita.isi;
 
       const { error: updateError } = await supabaseWithUser
         .from('berita')
         .update({
-          ...(updateBeritaDto.judul && { judul: updateBeritaDto.judul }),
-          ...(updateBeritaDto.penulis && { penulis: updateBeritaDto.penulis }),
-          ...(sanitizedIsi && { isi: sanitizedIsi }),
+          judul: judulBaru,
+          penulis: penulisBaru,
+          isi: isiBaru,
           diperbarui_pada: new Date().toISOString(),
         })
         .eq('id', idParam);
@@ -297,61 +338,75 @@ export class BeritaService {
       if (updateError)
         throw new InternalServerErrorException(updateError.message);
 
-      if (updateBeritaDto.url_gambar && updateBeritaDto.url_gambar.length > 0) {
-        const gambarBaru = updateBeritaDto.url_gambar[0];
+      if (
+        updateBeritaDto.berita_gambar &&
+        updateBeritaDto.berita_gambar.length > 0
+      ) {
+        const gambarBaru = updateBeritaDto.berita_gambar[0];
+        const gambarLama = berita.berita_gambar?.[0];
 
-        if (gambarBaru.url_gambar) {
-          const { data: gambarLama } = await supabaseWithUser
-            .from('berita_gambar')
-            .select('*')
-            .eq('berita_id', idParam)
-            .maybeSingle();
-
-          if (gambarLama?.url_gambar) {
-            const fileNameLama = gambarLama.url_gambar.split('/').pop();
-            if (fileNameLama) {
-              await supabaseWithUser.storage
-                .from('berita')
-                .remove([fileNameLama]);
-            }
-            await supabaseWithUser
-              .from('berita_gambar')
-              .delete()
-              .eq('berita_id', idParam);
-          }
-
+        if (gambarBaru.url_gambar?.startsWith('data:image')) {
           const base64 = gambarBaru.url_gambar.split(';base64,').pop();
           const fileExt = gambarBaru.url_gambar.substring(
             gambarBaru.url_gambar.indexOf('/') + 1,
             gambarBaru.url_gambar.indexOf(';'),
           );
-          const fileNameBaru = `berita-${Date.now()}-${Math.random()
+          const fileName = `berita-${Date.now()}-${Math.random()
             .toString(36)
             .substring(2)}.${fileExt}`;
 
           const { error: uploadError } = await supabaseWithUser.storage
             .from('berita')
-            .upload(fileNameBaru, Buffer.from(base64!, 'base64'), {
+            .upload(fileName, Buffer.from(base64!, 'base64'), {
               contentType: `image/${fileExt}`,
+              upsert: false,
             });
 
-          if (uploadError) {
+          if (uploadError)
             throw new InternalServerErrorException(uploadError.message);
+
+          const { data: publicUrlData } = supabaseWithUser.storage
+            .from('berita')
+            .getPublicUrl(fileName);
+
+          if (gambarLama?.url_gambar) {
+            const oldFileName = gambarLama.url_gambar.split('/').pop();
+            if (oldFileName) {
+              await supabaseWithUser.storage
+                .from('berita')
+                .remove([oldFileName]);
+            }
           }
 
-          const { data: urlData } = supabaseWithUser.storage
-            .from('berita')
-            .getPublicUrl(fileNameBaru);
-
-          await supabaseWithUser.from('berita_gambar').insert({
-            berita_id: idParam,
-            url_gambar: urlData.publicUrl,
-            keterangan: gambarBaru.keterangan ?? null,
-          });
+          if (gambarLama) {
+            await supabaseWithUser
+              .from('berita_gambar')
+              .update({
+                url_gambar: publicUrlData.publicUrl,
+                keterangan:
+                  gambarBaru.keterangan?.trim() ||
+                  gambarLama.keterangan ||
+                  null,
+              })
+              .eq('id', gambarLama.id);
+          } else {
+            await supabaseWithUser.from('berita_gambar').insert({
+              berita_id: idParam,
+              url_gambar: publicUrlData.publicUrl,
+              keterangan: gambarBaru.keterangan?.trim() || null,
+            });
+          }
+        } else if (gambarBaru.keterangan && gambarLama) {
+          await supabaseWithUser
+            .from('berita_gambar')
+            .update({
+              keterangan: gambarBaru.keterangan.trim(),
+            })
+            .eq('id', gambarLama.id);
         }
       }
 
-      const { data: updated } = await supabaseWithUser
+      const { data: updated, error: selectError } = await supabaseWithUser
         .from('berita')
         .select(
           `
@@ -372,6 +427,9 @@ export class BeritaService {
         )
         .eq('id', idParam)
         .single();
+
+      if (selectError)
+        throw new InternalServerErrorException(selectError.message);
 
       return updated as BeritaJoined;
     } catch (err: any) {

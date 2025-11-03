@@ -1,13 +1,14 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsNumber } from 'class-validator';
+import { IsNumber, IsOptional } from 'class-validator';
 
 export class ParamInovasiDto {
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'ID inovasi',
     example: 15,
   })
   @Type(() => Number)
   @IsNumber()
-  idParam: number;
+  @IsOptional()
+  idParam?: number;
 }

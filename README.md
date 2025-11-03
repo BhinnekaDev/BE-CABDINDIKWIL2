@@ -35,6 +35,17 @@ E-CABDINDIKWIL2/
 ├── api/
 │   └── index.ts
 ├── src/
+│   ├── admin-management/
+│   │   ├── dto/
+│   │   │   ├── param-admin.dto.ts
+│   │   │   ├── update-admin.dto.ts
+│   │   ├── interface/
+│   │   │   └── admin.interface.ts
+│   │   ├── admin-management.controller.spec.ts
+│   │   ├── admin-management.controller.ts
+│   │   ├── admin-management.module.ts
+│   │   ├── admin-management.service.spec.ts
+│   │   ├── admin-management.service.ts
 │   ├── auth/
 │   ├── berita/
 │   ├── satpen/

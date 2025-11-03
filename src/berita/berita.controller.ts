@@ -9,7 +9,12 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger';
 import type { Request } from 'express';
 
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -31,8 +36,23 @@ export class BeritaController {
    * @returns All berita
    */
   @Get()
-  async getAll() {
-    return await this.beritaService.getAllBerita();
+  @ApiOperation({
+    summary: 'Ambil semua berita atau berdasarkan ID (jika diberikan)',
+  })
+  @ApiQuery({
+    name: 'idParam',
+    required: false,
+    description: 'ID berita (opsional, untuk ambil berita tertentu)',
+    example: 15,
+  })
+  async getAllOrById(@Query() paramBeritaDto: ParamBeritaDto) {
+    const { idParam } = paramBeritaDto;
+
+    if (idParam) {
+      return await this.beritaService.getBeritaById(paramBeritaDto);
+    } else {
+      return await this.beritaService.getAllBerita();
+    }
   }
 
   /**
