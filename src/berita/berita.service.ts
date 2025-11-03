@@ -158,7 +158,6 @@ export class BeritaService {
     try {
       const isiHTML = createBeritaDto.isi ?? '';
 
-      // 🧹 Sanitize konten HTML untuk keamanan
       const sanitizedIsi = sanitizeHtml(isiHTML, {
         allowedTags: [
           'b',
@@ -187,7 +186,6 @@ export class BeritaService {
         allowProtocolRelative: false,
       });
 
-      // 📝 Simpan berita utama
       const { data: beritaData, error: beritaError } = await supabaseWithUser
         .from('berita')
         .insert({
@@ -204,17 +202,15 @@ export class BeritaService {
 
       const beritaId = beritaData.id;
 
-      // 🖼️ Jika ada gambar dari FE, cukup simpan URL-nya
       if (createBeritaDto.berita_gambar?.length) {
         const gambar = createBeritaDto.berita_gambar[0];
 
-        // ✅ Validasi bahwa URL gambar sudah benar (bukan base64)
         if (gambar.url_gambar?.startsWith('http')) {
           const { error: insertGambarError } = await supabaseWithUser
             .from('berita_gambar')
             .insert({
               berita_id: beritaId,
-              url_gambar: gambar.url_gambar, // langsung URL dari FE
+              url_gambar: gambar.url_gambar,
               keterangan: gambar.keterangan ?? null,
             });
 
@@ -228,7 +224,6 @@ export class BeritaService {
         }
       }
 
-      // 🔄 Ambil kembali berita beserta gambar-nya
       const { data: beritaJoined, error: joinError } = await supabaseWithUser
         .from('berita')
         .select(
@@ -276,7 +271,6 @@ export class BeritaService {
     const supabaseWithUser = createSupabaseClientWithUser(userJwt);
 
     try {
-      // 🔎 Cek apakah berita ada
       const { data: berita, error: beritaError } = await supabaseWithUser
         .from('berita')
         .select('*, berita_gambar(id, url_gambar, keterangan)')
@@ -287,7 +281,6 @@ export class BeritaService {
         throw new NotFoundException('Berita tidak ditemukan');
       }
 
-      // 🧹 Siapkan data baru
       const judulBaru = updateBeritaDto.judul?.trim() || berita.judul;
       const penulisBaru = updateBeritaDto.penulis?.trim() || berita.penulis;
       const isiBaru = updateBeritaDto.isi
@@ -319,7 +312,6 @@ export class BeritaService {
           })
         : berita.isi;
 
-      // ✏️ Update berita utama
       const { error: updateError } = await supabaseWithUser
         .from('berita')
         .update({
@@ -334,15 +326,12 @@ export class BeritaService {
         throw new InternalServerErrorException(updateError.message);
       }
 
-      // 🖼️ Update gambar (kalau dikirim)
       if (updateBeritaDto.berita_gambar?.length) {
         const gambarBaru = updateBeritaDto.berita_gambar[0];
         const gambarLama = berita.berita_gambar?.[0];
 
-        // ✅ Validasi URL publik (bukan base64)
         if (gambarBaru.url_gambar?.startsWith('http')) {
           if (gambarLama) {
-            // Update gambar yang sudah ada
             const { error: updateGambarError } = await supabaseWithUser
               .from('berita_gambar')
               .update({
@@ -356,7 +345,6 @@ export class BeritaService {
               throw new InternalServerErrorException(updateGambarError.message);
             }
           } else {
-            // Tambahkan gambar baru
             const { error: insertGambarError } = await supabaseWithUser
               .from('berita_gambar')
               .insert({
@@ -370,7 +358,6 @@ export class BeritaService {
             }
           }
         } else if (gambarBaru.keterangan && gambarLama) {
-          // Hanya ubah keterangan tanpa ubah URL
           const { error: updateKetError } = await supabaseWithUser
             .from('berita_gambar')
             .update({
@@ -385,7 +372,6 @@ export class BeritaService {
         }
       }
 
-      // 🔄 Ambil data berita yang sudah diperbarui
       const { data: updated, error: selectError } = await supabaseWithUser
         .from('berita')
         .select(
