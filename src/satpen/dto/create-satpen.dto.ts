@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsOptional, IsNumber, IsString } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class CreateSatpenDto {
   @ApiProperty({
@@ -32,15 +32,6 @@ export class CreateSatpenDto {
   @IsString()
   @IsNotEmpty()
   status: string;
-
-  @ApiProperty({
-    description: 'Alamat satuan pendidikan',
-    example: 'Jl. Merdeka No.1, Jakarta',
-    required: false,
-  })
-  @IsOptional()
-  @IsString()
-  alamat?: string;
 
   @ApiProperty({
     description: 'ID lokasi (referensi ke tabel lokasi)',

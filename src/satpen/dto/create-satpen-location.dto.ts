@@ -10,30 +10,9 @@ export class CreateSatpenLocationDto {
   kelurahan: string;
 
   @ApiProperty({
-    description: 'Kecamatan satuan pendidikan',
-    example: 'Kecamatan 1',
-  })
-  @IsString()
-  kecamatan: string;
-
-  @ApiProperty({
-    description: 'Kabupaten satuan pendidikan',
-    example: 'Kabupaten 1',
-  })
-  @IsString()
-  kabupaten: string;
-
-  @ApiProperty({
-    description: 'Provinsi satuan pendidikan',
-    example: 'Provinsi 1',
-  })
-  @IsString()
-  provinsi: string;
-
-  @ApiProperty({
     description: 'Nama Jalan',
     example: 'Jalan-jalan',
   })
   @IsString()
-  nama_jalan: string;
+  alamat: string;
 }
