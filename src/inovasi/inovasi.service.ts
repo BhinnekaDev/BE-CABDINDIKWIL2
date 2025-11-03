@@ -158,7 +158,7 @@ export class InovasiService {
     const supabaseWithUser = createSupabaseClientWithUser(userJwt);
 
     try {
-      let isiHTML = createInovasiDto.isi ?? '';
+      const isiHTML = createInovasiDto.isi ?? '';
 
       const sanitizedIsi = sanitizeHtml(isiHTML, {
         allowedTags: [
@@ -184,7 +184,7 @@ export class InovasiService {
           a: ['href', 'name', 'target'],
           img: ['src', 'alt', 'title'],
         },
-        allowedSchemes: ['http', 'https', 'data'],
+        allowedSchemes: ['http', 'https'],
         allowProtocolRelative: false,
       });
 
@@ -207,44 +207,26 @@ export class InovasiService {
       if (createInovasiDto.inovasi_gambar?.length) {
         const gambar = createInovasiDto.inovasi_gambar[0];
 
-        const base64 = gambar.url_gambar.split(';base64,').pop();
-        const fileExt = gambar.url_gambar.substring(
-          gambar.url_gambar.indexOf('/') + 1,
-          gambar.url_gambar.indexOf(';'),
-        );
+        if (
+          typeof gambar.url_gambar === 'string' &&
+          (gambar.url_gambar.startsWith('http://') ||
+            gambar.url_gambar.startsWith('https://'))
+        ) {
+          const { error: insertGambarError } = await supabaseWithUser
+            .from('inovasi_gambar')
+            .insert({
+              inovasi_id: inovasiId,
+              url_gambar: gambar.url_gambar,
+              keterangan: gambar.keterangan ?? null,
+            });
 
-        const fileName = `inovasi-${Date.now()}-${Math.random()
-          .toString(36)
-          .substring(2)}.${fileExt}`;
-
-        const { error: uploadError } = await supabaseWithUser.storage
-          .from('inovasi')
-          .upload(fileName, Buffer.from(base64!, 'base64'), {
-            contentType: `image/${fileExt}`,
-          });
-
-        if (uploadError) {
-          throw new InternalServerErrorException(uploadError.message);
-        }
-
-        const { data: urlData } = supabaseWithUser.storage
-          .from('inovasi')
-          .getPublicUrl(fileName);
-
-        const { error: insertGambarError } = await supabaseWithUser
-          .from('inovasi_gambar')
-          .insert({
-            inovasi_id: inovasiId,
-            url_gambar: urlData.publicUrl,
-            keterangan: gambar.keterangan ?? null,
-          });
-
-        if (insertGambarError) {
-          throw new InternalServerErrorException(insertGambarError.message);
+          if (insertGambarError) {
+            throw new InternalServerErrorException(insertGambarError.message);
+          }
         }
       }
 
-      const { data: inovasiJoined } = await supabaseWithUser
+      const { data: inovasiJoined, error: selectError } = await supabaseWithUser
         .from('inovasi')
         .select(
           `
@@ -266,12 +248,15 @@ export class InovasiService {
         .eq('id', inovasiId)
         .single();
 
+      if (selectError) {
+        throw new InternalServerErrorException(selectError.message);
+      }
+
       return inovasiJoined as InovasiJoined;
     } catch (err: unknown) {
       if (err instanceof Error) {
         throw new InternalServerErrorException(err.message);
       }
-
       throw new InternalServerErrorException('Terjadi kesalahan tidak terduga');
     }
   }
