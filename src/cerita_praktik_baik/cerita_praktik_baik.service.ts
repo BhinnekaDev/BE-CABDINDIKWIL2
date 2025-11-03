@@ -167,8 +167,8 @@ export class CeritaPraktikBaikService {
 
       const seputarId = ceritapraktikbaikData.id;
 
-      if (createCeritaPraktikBaikDto.url_gambar?.length) {
-        const gambar = createCeritaPraktikBaikDto.url_gambar[0];
+      if (createCeritaPraktikBaikDto.cerita_praktik_baik_gambar?.length) {
+        const gambar = createCeritaPraktikBaikDto.cerita_praktik_baik_gambar[0];
 
         const base64 = gambar.url_gambar.split(';base64,').pop();
         const fileExt = gambar.url_gambar.substring(
@@ -313,18 +313,14 @@ export class CeritaPraktikBaikService {
       }
 
       if (
-        updateCeritaPraktikBaikDto.url_gambar &&
-        updateCeritaPraktikBaikDto.url_gambar.length > 0
+        updateCeritaPraktikBaikDto.cerita_praktik_baik_gambar &&
+        updateCeritaPraktikBaikDto.cerita_praktik_baik_gambar.length > 0
       ) {
-        const gambarBaru = updateCeritaPraktikBaikDto.url_gambar[0];
-        const gambarLama = cerita.cerita_praktik_baik_gambar?.[0];
+        const gambarBaru =
+          updateCeritaPraktikBaikDto.cerita_praktik_baik_gambar[0];
 
-        if (
-          !gambarBaru.url_gambar?.startsWith('data:image') &&
-          gambarBaru.keterangan &&
-          gambarLama
-        ) {
-          const { error: updateKeteranganError } = await supabaseWithUser
+        if (gambarBaru.url_gambar) {
+          const { data: gambarLamaList } = await supabaseWithUser
             .from('cerita_praktik_baik_gambar')
             .update({
               keterangan:

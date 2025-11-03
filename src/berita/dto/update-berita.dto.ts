@@ -59,5 +59,5 @@ export class UpdateBeritaWithGambarDto extends UpdateBeritaDto {
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => UpdateBeritaGambarDto)
-  url_gambar?: UpdateBeritaGambarDto[];
+  berita_gambar?: UpdateBeritaGambarDto[];
 }

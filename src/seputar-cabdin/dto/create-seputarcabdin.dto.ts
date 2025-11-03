@@ -56,5 +56,5 @@ export class CreateSeputarCabdinWithGambarDto extends CreateSeputarCabdinDto {
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CreateSeputarCabdinGambarDto)
-  url_gambar?: CreateSeputarCabdinGambarDto[];
+  seputar_cabdin_gambar?: CreateSeputarCabdinGambarDto[];
 }

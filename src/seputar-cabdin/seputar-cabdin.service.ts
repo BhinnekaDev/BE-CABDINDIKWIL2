@@ -167,8 +167,8 @@ export class SeputarCabdinService {
 
       const seputarId = seputarcabdinData.id;
 
-      if (createSeputarCabdinDto.url_gambar?.length) {
-        const gambar = createSeputarCabdinDto.url_gambar[0];
+      if (createSeputarCabdinDto.seputar_cabdin_gambar?.length) {
+        const gambar = createSeputarCabdinDto.seputar_cabdin_gambar[0];
 
         const base64 = gambar.url_gambar.split(';base64,').pop();
         const fileExt = gambar.url_gambar.substring(
@@ -314,18 +314,13 @@ export class SeputarCabdinService {
       }
 
       if (
-        updateSeputarCabdinDto.url_gambar &&
-        updateSeputarCabdinDto.url_gambar.length > 0
+        updateSeputarCabdinDto.seputar_cabdin_gambar &&
+        updateSeputarCabdinDto.seputar_cabdin_gambar.length > 0
       ) {
-        const gambarBaru = updateSeputarCabdinDto.url_gambar[0];
-        const gambarLama = seputarcabdinData.seputar_cabdin_gambar?.[0];
+        const gambarBaru = updateSeputarCabdinDto.seputar_cabdin_gambar[0];
 
-        if (
-          !gambarBaru.url_gambar?.startsWith('data:image') &&
-          gambarBaru.keterangan &&
-          gambarLama
-        ) {
-          const { error: updateKeteranganError } = await supabaseWithUser
+        if (gambarBaru.url_gambar) {
+          const { data: gambarLamaList } = await supabaseWithUser
             .from('seputar_cabdin_gambar')
             .update({
               keterangan:

@@ -201,8 +201,8 @@ export class BeritaService {
 
       const beritaId = beritaData.id;
 
-      if (createBeritaDto.url_gambar?.length) {
-        const gambar = createBeritaDto.url_gambar[0];
+      if (createBeritaDto.berita_gambar?.length) {
+        const gambar = createBeritaDto.berita_gambar[0];
 
         const base64 = gambar.url_gambar.split(';base64,').pop();
         const fileExt = gambar.url_gambar.substring(
@@ -345,16 +345,14 @@ export class BeritaService {
       if (updateError)
         throw new InternalServerErrorException(updateError.message);
 
-      if (updateBeritaDto.url_gambar && updateBeritaDto.url_gambar.length > 0) {
-        const gambarBaru = updateBeritaDto.url_gambar[0];
-        const gambarLama = berita.berita_gambar?.[0];
+      if (
+        updateBeritaDto.berita_gambar &&
+        updateBeritaDto.berita_gambar.length > 0
+      ) {
+        const gambarBaru = updateBeritaDto.berita_gambar[0];
 
-        if (
-          !gambarBaru.url_gambar?.startsWith('data:image') &&
-          gambarBaru.keterangan &&
-          gambarLama
-        ) {
-          const { error: updateKeteranganError } = await supabaseWithUser
+        if (gambarBaru.url_gambar) {
+          const { data: gambarLama } = await supabaseWithUser
             .from('berita_gambar')
             .update({
               keterangan:

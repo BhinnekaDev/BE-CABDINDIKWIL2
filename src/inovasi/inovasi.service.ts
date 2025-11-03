@@ -203,8 +203,8 @@ export class InovasiService {
 
       const inovasiId = inovasiData.id;
 
-      if (createInovasiDto.url_gambar?.length) {
-        const gambar = createInovasiDto.url_gambar[0];
+      if (createInovasiDto.inovasi_gambar?.length) {
+        const gambar = createInovasiDto.inovasi_gambar[0];
 
         const base64 = gambar.url_gambar.split(';base64,').pop();
         const fileExt = gambar.url_gambar.substring(
@@ -348,18 +348,13 @@ export class InovasiService {
         throw new InternalServerErrorException(updateError.message);
 
       if (
-        updateInovasiDto.url_gambar &&
-        updateInovasiDto.url_gambar.length > 0
+        updateInovasiDto.inovasi_gambar &&
+        updateInovasiDto.inovasi_gambar.length > 0
       ) {
-        const gambarBaru = updateInovasiDto.url_gambar[0];
-        const gambarLama = inovasi.inovasi_gambar?.[0];
+        const gambarBaru = updateInovasiDto.inovasi_gambar[0];
 
-        if (
-          !gambarBaru.url_gambar?.startsWith('data:image') &&
-          gambarBaru.keterangan &&
-          gambarLama
-        ) {
-          const { error: updateKeteranganError } = await supabaseWithUser
+        if (gambarBaru.url_gambar) {
+          const { data: gambarLamaList } = await supabaseWithUser
             .from('inovasi_gambar')
             .update({
               keterangan:

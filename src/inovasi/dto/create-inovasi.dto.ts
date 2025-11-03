@@ -55,5 +55,5 @@ export class CreateInovasiWithGambarDto extends CreateInovasiDto {
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CreateInovasiGambarDto)
-  url_gambar?: CreateInovasiGambarDto[];
+  inovasi_gambar?: CreateInovasiGambarDto[];
 }
