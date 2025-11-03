@@ -155,8 +155,7 @@ export class BeritaService {
     const supabaseWithUser = createSupabaseClientWithUser(userJwt);
 
     try {
-      let isiHTML = createBeritaDto.isi ?? '';
-
+      const isiHTML = createBeritaDto.isi ?? '';
       const sanitizedIsi = sanitizeHtml(isiHTML, {
         allowedTags: [
           'b',
@@ -203,36 +202,43 @@ export class BeritaService {
 
       if (createBeritaDto.berita_gambar?.length) {
         const gambar = createBeritaDto.berita_gambar[0];
+        let publicUrl = gambar.url_gambar;
 
-        const base64 = gambar.url_gambar.split(';base64,').pop();
-        const fileExt = gambar.url_gambar.substring(
-          gambar.url_gambar.indexOf('/') + 1,
-          gambar.url_gambar.indexOf(';'),
-        );
+        const isBase64 = gambar.url_gambar?.startsWith('data:image');
 
-        const fileName = `berita-${Date.now()}-${Math.random()
-          .toString(36)
-          .substring(2)}.${fileExt}`;
+        if (isBase64) {
+          const base64 = gambar.url_gambar.split(';base64,').pop();
+          const fileExt = gambar.url_gambar.substring(
+            gambar.url_gambar.indexOf('/') + 1,
+            gambar.url_gambar.indexOf(';'),
+          );
 
-        const { error: uploadError } = await supabaseWithUser.storage
-          .from('berita')
-          .upload(fileName, Buffer.from(base64!, 'base64'), {
-            contentType: `image/${fileExt}`,
-          });
+          const fileName = `berita-${Date.now()}-${Math.random()
+            .toString(36)
+            .substring(2)}.${fileExt}`;
 
-        if (uploadError) {
-          throw new InternalServerErrorException(uploadError.message);
+          const { error: uploadError } = await supabaseWithUser.storage
+            .from('berita')
+            .upload(fileName, Buffer.from(base64!, 'base64'), {
+              contentType: `image/${fileExt}`,
+            });
+
+          if (uploadError) {
+            throw new InternalServerErrorException(uploadError.message);
+          }
+
+          const { data: urlData } = supabaseWithUser.storage
+            .from('berita')
+            .getPublicUrl(fileName);
+
+          publicUrl = urlData.publicUrl;
         }
-
-        const { data: urlData } = supabaseWithUser.storage
-          .from('berita')
-          .getPublicUrl(fileName);
 
         const { error: insertGambarError } = await supabaseWithUser
           .from('berita_gambar')
           .insert({
             berita_id: beritaId,
-            url_gambar: urlData.publicUrl,
+            url_gambar: publicUrl,
             keterangan: gambar.keterangan ?? null,
           });
 
@@ -241,7 +247,7 @@ export class BeritaService {
         }
       }
 
-      const { data: beritaJoined } = await supabaseWithUser
+      const { data: beritaJoined, error: joinError } = await supabaseWithUser
         .from('berita')
         .select(
           `
@@ -262,6 +268,10 @@ export class BeritaService {
         )
         .eq('id', beritaId)
         .single();
+
+      if (joinError) {
+        throw new InternalServerErrorException(joinError.message);
+      }
 
       return beritaJoined as BeritaJoined;
     } catch (err: any) {
@@ -296,6 +306,7 @@ export class BeritaService {
 
       const judulBaru = updateBeritaDto.judul?.trim() || berita.judul;
       const penulisBaru = updateBeritaDto.penulis?.trim() || berita.penulis;
+
       const isiBaru = updateBeritaDto.isi
         ? sanitizeHtml(updateBeritaDto.isi, {
             allowedTags: [
@@ -338,71 +349,82 @@ export class BeritaService {
       if (updateError)
         throw new InternalServerErrorException(updateError.message);
 
-      if (
-        updateBeritaDto.berita_gambar &&
-        updateBeritaDto.berita_gambar.length > 0
-      ) {
+      if (updateBeritaDto.berita_gambar?.length) {
         const gambarBaru = updateBeritaDto.berita_gambar[0];
         const gambarLama = berita.berita_gambar?.[0];
 
-        if (gambarBaru.url_gambar?.startsWith('data:image')) {
-          const base64 = gambarBaru.url_gambar.split(';base64,').pop();
-          const fileExt = gambarBaru.url_gambar.substring(
-            gambarBaru.url_gambar.indexOf('/') + 1,
-            gambarBaru.url_gambar.indexOf(';'),
-          );
-          const fileName = `berita-${Date.now()}-${Math.random()
-            .toString(36)
-            .substring(2)}.${fileExt}`;
+        if (!gambarBaru?.url_gambar) {
+          if (gambarBaru?.keterangan && gambarLama) {
+            await supabaseWithUser
+              .from('berita_gambar')
+              .update({ keterangan: gambarBaru.keterangan.trim() })
+              .eq('id', gambarLama.id);
+          }
+        } else {
+          let publicUrl = gambarBaru.url_gambar;
+          const isBase64 = gambarBaru.url_gambar.startsWith('data:image');
 
-          const { error: uploadError } = await supabaseWithUser.storage
-            .from('berita')
-            .upload(fileName, Buffer.from(base64!, 'base64'), {
-              contentType: `image/${fileExt}`,
-              upsert: false,
-            });
+          if (isBase64) {
+            const base64 = gambarBaru.url_gambar.split(';base64,').pop();
+            const fileExt = gambarBaru.url_gambar.substring(
+              gambarBaru.url_gambar.indexOf('/') + 1,
+              gambarBaru.url_gambar.indexOf(';'),
+            );
+            const fileName = `berita-${Date.now()}-${Math.random()
+              .toString(36)
+              .substring(2)}.${fileExt}`;
 
-          if (uploadError)
-            throw new InternalServerErrorException(uploadError.message);
+            const { error: uploadError } = await supabaseWithUser.storage
+              .from('berita')
+              .upload(fileName, Buffer.from(base64!, 'base64'), {
+                contentType: `image/${fileExt}`,
+              });
 
-          const { data: publicUrlData } = supabaseWithUser.storage
-            .from('berita')
-            .getPublicUrl(fileName);
+            if (uploadError)
+              throw new InternalServerErrorException(uploadError.message);
 
-          if (gambarLama?.url_gambar) {
-            const oldFileName = gambarLama.url_gambar.split('/').pop();
-            if (oldFileName) {
-              await supabaseWithUser.storage
-                .from('berita')
-                .remove([oldFileName]);
+            const { data: urlData } = supabaseWithUser.storage
+              .from('berita')
+              .getPublicUrl(fileName);
+
+            publicUrl = urlData.publicUrl;
+
+            if (gambarLama?.url_gambar) {
+              const oldFileName = gambarLama.url_gambar.split('/').pop();
+              if (oldFileName) {
+                await supabaseWithUser.storage
+                  .from('berita')
+                  .remove([oldFileName]);
+              }
             }
           }
 
           if (gambarLama) {
-            await supabaseWithUser
+            const { error: updateGambarError } = await supabaseWithUser
               .from('berita_gambar')
               .update({
-                url_gambar: publicUrlData.publicUrl,
+                url_gambar: publicUrl,
                 keterangan:
                   gambarBaru.keterangan?.trim() ||
                   gambarLama.keterangan ||
                   null,
               })
               .eq('id', gambarLama.id);
+
+            if (updateGambarError)
+              throw new InternalServerErrorException(updateGambarError.message);
           } else {
-            await supabaseWithUser.from('berita_gambar').insert({
-              berita_id: idParam,
-              url_gambar: publicUrlData.publicUrl,
-              keterangan: gambarBaru.keterangan?.trim() || null,
-            });
+            const { error: insertGambarError } = await supabaseWithUser
+              .from('berita_gambar')
+              .insert({
+                berita_id: idParam,
+                url_gambar: publicUrl,
+                keterangan: gambarBaru.keterangan?.trim() || null,
+              });
+
+            if (insertGambarError)
+              throw new InternalServerErrorException(insertGambarError.message);
           }
-        } else if (gambarBaru.keterangan && gambarLama) {
-          await supabaseWithUser
-            .from('berita_gambar')
-            .update({
-              keterangan: gambarBaru.keterangan.trim(),
-            })
-            .eq('id', gambarLama.id);
         }
       }
 
