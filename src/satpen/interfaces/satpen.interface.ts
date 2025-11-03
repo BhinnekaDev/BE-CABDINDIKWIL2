@@ -28,9 +28,6 @@ export interface SatpenJoined {
   lokasi_id?: number;
   lokasi?: {
     kelurahan?: string;
-    kecamatan?: string;
-    kabupaten?: string;
-    provinsi?: string;
   };
   created_at?: string;
 }
@@ -38,9 +35,6 @@ export interface SatpenJoined {
 export interface Location {
   id: number;
   kelurahan: string;
-  kecamatan: string;
-  kabupaten: string;
-  provinsi: string;
 }
 
 export interface Kind {
