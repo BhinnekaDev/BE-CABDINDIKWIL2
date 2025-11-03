@@ -5,7 +5,7 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import { SupabaseClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { createSupabaseClientWithUser } from '../../supabase/supabase.client';
 
 import { FilterAdminDto } from './dto/filter-admin.dto';
@@ -28,6 +28,11 @@ export class AdminManagementService {
    */
   async getAllAdmins(userJwt: string): Promise<Admin[]> {
     const supabaseWithUser = createSupabaseClientWithUser(userJwt);
+
+    const supabaseAdmin = createClient(
+      process.env.SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    );
 
     try {
       const {
@@ -63,13 +68,33 @@ export class AdminManagementService {
       const { data: admins, error: fetchError } = await supabaseWithUser
         .from('admin')
         .select('id, email, role, status_approval, created_at, updated_at')
+        .in('status_approval', ['Approved', 'Pending'])
         .order('created_at', { ascending: false });
 
       if (fetchError) {
         throw new InternalServerErrorException(fetchError.message);
       }
 
-      return admins as Admin[];
+      const { data: allAuthUsers, error: authError } =
+        await supabaseAdmin.auth.admin.listUsers();
+
+      if (authError) {
+        throw new InternalServerErrorException(
+          'Gagal mengambil data auth Supabase.',
+        );
+      }
+
+      const mergedAdmins = admins.map((a) => {
+        const authUser = allAuthUsers.users.find((u) => u.id === a.id);
+        return {
+          ...a,
+          email_confirmed_at: authUser?.email_confirmed_at || null,
+          last_sign_in_at: authUser?.last_sign_in_at || null,
+          metadata: authUser?.user_metadata || {},
+        };
+      });
+
+      return mergedAdmins as Admin[];
     } catch (err: any) {
       throw new InternalServerErrorException(err.message);
     }
