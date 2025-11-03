@@ -66,27 +66,31 @@ export class AuthService {
     });
 
     if (error) {
+      if (
+        error.message.includes('Email not confirmed') ||
+        error.message.includes('Email not confirmed') ||
+        error.message.toLowerCase().includes('email not confirmed')
+      ) {
+        throw new ForbiddenException(
+          'Email Anda belum diverifikasi. Silakan cek kotak masuk Anda.',
+        );
+      }
+
       throw new UnauthorizedException('Email atau password salah.');
     }
 
     const user = data.user;
-
     if (!user) {
       throw new UnauthorizedException(
-        'Gagal mendapatkan data pengguna dari Supabase.',
-      );
-    }
-
-    if (!user.email_confirmed_at) {
-      throw new ForbiddenException(
-        'Email Anda belum diverifikasi. Silakan cek kotak masuk Anda.',
+        'Data pengguna tidak ditemukan di Supabase.',
       );
     }
 
     const { data: adminData, error: adminError } = await this.supabase
       .from('admin')
-      .select('id, role, status_approval')
+      .select('id, email, role, status_approval')
       .eq('id', user.id)
+      .eq('email', user.email)
       .single();
 
     if (adminError || !adminData) {
@@ -110,6 +114,7 @@ export class AuthService {
         email: user.email,
         role: adminData.role,
         status_approval: adminData.status_approval,
+        user_metadata: user.user_metadata || {},
       },
     };
   }

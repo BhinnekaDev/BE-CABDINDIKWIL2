@@ -296,43 +296,36 @@ export class InovasiService {
         throw new NotFoundException('Inovasi tidak ditemukan');
       }
 
-      const judulBaru =
-        updateInovasiDto.judul && updateInovasiDto.judul.trim() !== ''
-          ? updateInovasiDto.judul
-          : inovasi.judul;
-      const penulisBaru =
-        updateInovasiDto.penulis && updateInovasiDto.penulis.trim() !== ''
-          ? updateInovasiDto.penulis
-          : inovasi.penulis;
-      const isiBaru =
-        updateInovasiDto.isi && updateInovasiDto.isi.trim() !== ''
-          ? sanitizeHtml(updateInovasiDto.isi, {
-              allowedTags: [
-                'b',
-                'i',
-                'em',
-                'strong',
-                'a',
-                'p',
-                'ul',
-                'ol',
-                'li',
-                'br',
-                'h1',
-                'h2',
-                'h3',
-                'h4',
-                'h5',
-                'h6',
-                'img',
-              ],
-              allowedAttributes: {
-                a: ['href', 'name', 'target'],
-                img: ['src', 'alt', 'title'],
-              },
-              allowedSchemes: ['http', 'https', 'data'],
-            })
-          : inovasi.isi;
+      const judulBaru = updateInovasiDto.judul?.trim() || inovasi.judul;
+      const penulisBaru = updateInovasiDto.penulis?.trim() || inovasi.penulis;
+      const isiBaru = updateInovasiDto.isi
+        ? sanitizeHtml(updateInovasiDto.isi, {
+            allowedTags: [
+              'b',
+              'i',
+              'em',
+              'strong',
+              'a',
+              'p',
+              'ul',
+              'ol',
+              'li',
+              'br',
+              'h1',
+              'h2',
+              'h3',
+              'h4',
+              'h5',
+              'h6',
+              'img',
+            ],
+            allowedAttributes: {
+              a: ['href', 'name', 'target'],
+              img: ['src', 'alt', 'title'],
+            },
+            allowedSchemes: ['http', 'https', 'data'],
+          })
+        : inovasi.isi;
 
       const { error: updateError } = await supabaseWithUser
         .from('inovasi')
@@ -352,87 +345,66 @@ export class InovasiService {
         updateInovasiDto.inovasi_gambar.length > 0
       ) {
         const gambarBaru = updateInovasiDto.inovasi_gambar[0];
+        const gambarLama = inovasi.inovasi_gambar?.[0];
 
-        if (gambarBaru.url_gambar) {
-          const { data: gambarLamaList } = await supabaseWithUser
-            .from('inovasi_gambar')
-            .update({
-              keterangan:
-                gambarBaru.keterangan.trim() !== ''
-                  ? gambarBaru.keterangan
-                  : gambarLama.keterangan,
-            })
-            .eq('id', gambarLama.id);
-
-          if (updateKeteranganError) {
-            throw new InternalServerErrorException(
-              updateKeteranganError.message,
-            );
-          }
-        } else if (gambarBaru.url_gambar?.startsWith('data:image')) {
+        if (gambarBaru.url_gambar?.startsWith('data:image')) {
           const base64 = gambarBaru.url_gambar.split(';base64,').pop();
           const fileExt = gambarBaru.url_gambar.substring(
             gambarBaru.url_gambar.indexOf('/') + 1,
             gambarBaru.url_gambar.indexOf(';'),
           );
-          const fileNameBaru = `inovasi-${Date.now()}-${Math.random()
+          const fileName = `inovasi-${Date.now()}-${Math.random()
             .toString(36)
             .substring(2)}.${fileExt}`;
 
           const { error: uploadError } = await supabaseWithUser.storage
             .from('inovasi')
-            .upload(fileNameBaru, Buffer.from(base64!, 'base64'), {
+            .upload(fileName, Buffer.from(base64!, 'base64'), {
               contentType: `image/${fileExt}`,
+              upsert: false,
             });
 
-          if (uploadError) {
+          if (uploadError)
             throw new InternalServerErrorException(uploadError.message);
-          }
 
-          const { data: urlData } = supabaseWithUser.storage
+          const { data: publicUrlData } = supabaseWithUser.storage
             .from('inovasi')
-            .getPublicUrl(fileNameBaru);
+            .getPublicUrl(fileName);
+
+          if (gambarLama?.url_gambar) {
+            const oldFileName = gambarLama.url_gambar.split('/').pop();
+            if (oldFileName) {
+              await supabaseWithUser.storage
+                .from('inovasi')
+                .remove([oldFileName]);
+            }
+          }
 
           if (gambarLama) {
-            if (gambarLama.url_gambar) {
-              const fileNameLama = gambarLama.url_gambar.split('/').pop();
-              if (fileNameLama) {
-                await supabaseWithUser.storage
-                  .from('inovasi')
-                  .remove([fileNameLama]);
-              }
-            }
-
-            const { error: updateGambarError } = await supabaseWithUser
+            await supabaseWithUser
               .from('inovasi_gambar')
               .update({
-                url_gambar: urlData.publicUrl,
+                url_gambar: publicUrlData.publicUrl,
                 keterangan:
-                  gambarBaru.keterangan && gambarBaru.keterangan.trim() !== ''
-                    ? gambarBaru.keterangan
-                    : gambarLama.keterangan,
+                  gambarBaru.keterangan?.trim() ||
+                  gambarLama.keterangan ||
+                  null,
               })
               .eq('id', gambarLama.id);
-
-            if (updateGambarError) {
-              throw new InternalServerErrorException(updateGambarError.message);
-            }
           } else {
-            const { error: insertError } = await supabaseWithUser
-              .from('inovasi_gambar')
-              .insert({
-                inovasi_id: idParam,
-                url_gambar: urlData.publicUrl,
-                keterangan:
-                  gambarBaru.keterangan && gambarBaru.keterangan.trim() !== ''
-                    ? gambarBaru.keterangan
-                    : null,
-              });
-
-            if (insertError) {
-              throw new InternalServerErrorException(insertError.message);
-            }
+            await supabaseWithUser.from('inovasi_gambar').insert({
+              inovasi_id: idParam,
+              url_gambar: publicUrlData.publicUrl,
+              keterangan: gambarBaru.keterangan?.trim() || null,
+            });
           }
+        } else if (gambarBaru.keterangan && gambarLama) {
+          await supabaseWithUser
+            .from('inovasi_gambar')
+            .update({
+              keterangan: gambarBaru.keterangan.trim(),
+            })
+            .eq('id', gambarLama.id);
         }
       }
 
@@ -440,27 +412,26 @@ export class InovasiService {
         .from('inovasi')
         .select(
           `
-        id,
-        judul,
-        penulis,
-        tanggal_diterbitkan,
-        isi,
-        dibuat_pada,
-        diperbarui_pada,
-        inovasi_gambar (
           id,
-          url_gambar,
-          keterangan,
-          dibuat_pada
-        )
-      `,
+          judul,
+          penulis,
+          tanggal_diterbitkan,
+          isi,
+          dibuat_pada,
+          diperbarui_pada,
+          inovasi_gambar (
+            id,
+            url_gambar,
+            keterangan,
+            dibuat_pada
+          )
+        `,
         )
         .eq('id', idParam)
         .single();
 
-      if (selectError) {
+      if (selectError)
         throw new InternalServerErrorException(selectError.message);
-      }
 
       return updated as InovasiJoined;
     } catch (err: any) {

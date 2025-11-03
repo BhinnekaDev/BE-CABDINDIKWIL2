@@ -261,6 +261,12 @@ export class SeputarCabdinService {
         throw new NotFoundException('Seputar cabdin tidak ditemukan');
       }
 
+      const gambarLama = seputarcabdinData.seputar_cabdin_gambar
+        ? Array.isArray(seputarcabdinData.seputar_cabdin_gambar)
+          ? seputarcabdinData.seputar_cabdin_gambar[0]
+          : seputarcabdinData.seputar_cabdin_gambar
+        : null;
+
       const judulBaru =
         updateSeputarCabdinDto.judul?.trim() !== ''
           ? updateSeputarCabdinDto.judul
@@ -313,29 +319,36 @@ export class SeputarCabdinService {
         throw new InternalServerErrorException(updateError.message);
       }
 
-      if (
+      const gambarBaru =
         updateSeputarCabdinDto.seputar_cabdin_gambar &&
-        updateSeputarCabdinDto.seputar_cabdin_gambar.length > 0
-      ) {
-        const gambarBaru = updateSeputarCabdinDto.seputar_cabdin_gambar[0];
+        updateSeputarCabdinDto.seputar_cabdin_gambar.length
+          ? updateSeputarCabdinDto.seputar_cabdin_gambar[0]
+          : null;
 
-        if (gambarBaru.url_gambar) {
-          const { data: gambarLamaList } = await supabaseWithUser
+      if (gambarBaru) {
+        if (
+          typeof gambarBaru.url_gambar === 'string' &&
+          !gambarBaru.url_gambar.startsWith('data:image')
+        ) {
+          const { error: updateKeteranganError } = await supabaseWithUser
             .from('seputar_cabdin_gambar')
             .update({
               keterangan:
-                gambarBaru.keterangan.trim() !== ''
+                (gambarBaru.keterangan ?? '').trim() !== ''
                   ? gambarBaru.keterangan
-                  : gambarLama.keterangan,
+                  : (gambarLama?.keterangan ?? null),
             })
-            .eq('id', gambarLama.id);
+            .eq('id', gambarLama?.id);
 
           if (updateKeteranganError) {
             throw new InternalServerErrorException(
               updateKeteranganError.message,
             );
           }
-        } else if (gambarBaru.url_gambar?.startsWith('data:image')) {
+        } else if (
+          typeof gambarBaru.url_gambar === 'string' &&
+          gambarBaru.url_gambar.startsWith('data:image')
+        ) {
           const base64 = gambarBaru.url_gambar.split(';base64,').pop();
           const fileExt = gambarBaru.url_gambar.substring(
             gambarBaru.url_gambar.indexOf('/') + 1,

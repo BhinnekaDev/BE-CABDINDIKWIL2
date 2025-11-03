@@ -4,24 +4,24 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { SupabaseClient } from '@supabase/supabase-js';
-import { ParamSatpenDto } from './dto/param-satpen.dto';
-import { CreateSatpenDto } from './dto/create-satpen.dto';
-import { UpdateSatpenDto } from './dto/update-satpen.dto';
-import { FilterSatpenDto } from './dto/filter-satpen.dto';
-import { SatpenView } from './interfaces/satpen.interface';
-import { ParamSatpenKindDto } from './dto/param-satpen-kind.dto';
+import { createSupabaseClientWithUser } from '../../supabase/supabase.client';
 import { CreateSatpenKindDto } from './dto/create-satpen-kind.dto';
+import { CreateSatpenLocationDto } from './dto/create-satpen-location.dto';
+import { CreateSatpenDto } from './dto/create-satpen.dto';
+import { FilterSatpenDto } from './dto/filter-satpen.dto';
+import { ParamSatpenKindDto } from './dto/param-satpen-kind.dto';
+import { ParamSatpenLocationDto } from './dto/param-satpen-location.dto';
+import { ParamSatpenDto } from './dto/param-satpen.dto';
 import { UpdateSatpenKindDto } from './dto/update-satpen-kind.dto';
+import { UpdateSatpenLocationDto } from './dto/update-satpen-location.dto';
+import { UpdateSatpenDto } from './dto/update-satpen.dto';
 import {
   Kind,
-  Satpen,
   Location,
+  Satpen,
   SatpenJoined,
+  SatpenView,
 } from './interfaces/satpen.interface';
-import { ParamSatpenLocationDto } from './dto/param-satpen-location.dto';
-import { UpdateSatpenLocationDto } from './dto/update-satpen-location.dto';
-import { CreateSatpenLocationDto } from './dto/create-satpen-location.dto';
-import { createSupabaseClientWithUser } from '../../supabase/supabase.client';
 
 @Injectable()
 export class SatpenService {
@@ -151,14 +151,14 @@ export class SatpenService {
     userJwt: string,
     CreateSatpenLocationDto: CreateSatpenLocationDto,
   ): Promise<Location[]> {
-    const { kelurahan, kecamatan, kabupaten, provinsi } =
+    const { kelurahan, kecamatan, kabupaten, provinsi, nama_jalan } =
       CreateSatpenLocationDto;
 
     const supabaseWithUser = createSupabaseClientWithUser(userJwt);
 
     const { data, error } = await supabaseWithUser
       .from('lokasi')
-      .insert({ kelurahan, kecamatan, kabupaten, provinsi })
+      .insert({ kelurahan, kecamatan, kabupaten, provinsi, nama_jalan })
       .select();
 
     if (error) {
@@ -235,14 +235,14 @@ export class SatpenService {
     updateSatpenLocationDto: UpdateSatpenLocationDto,
   ): Promise<Location[]> {
     const { idParam } = paramSatpenLocationDto;
-    const { kelurahan, kecamatan, kabupaten, provinsi } =
+    const { kelurahan, kecamatan, kabupaten, provinsi, nama_jalan } =
       updateSatpenLocationDto;
 
     const supabaseWithUser = createSupabaseClientWithUser(userJwt);
 
     const { data, error } = await supabaseWithUser
       .from('lokasi')
-      .update({ kelurahan, kecamatan, kabupaten, provinsi })
+      .update({ kelurahan, kecamatan, kabupaten, provinsi, nama_jalan })
       .eq('id', idParam)
       .select();
 
