@@ -170,7 +170,7 @@ export class DashboardService {
    */
   async getJumlahSekolahPerJenis(
     filter?: SekolahFilterDto,
-  ): Promise<{ sekolahData: { name: string; jumlah: number }[] }> {
+  ): Promise<{ name: string; jumlah: number }[]> {
     try {
       const { data: jenisData, error: jenisError } = await this.supabase
         .from('jenis_sekolah')
@@ -213,7 +213,7 @@ export class DashboardService {
         jumlah: countMap.get(jenis.id) || 0,
       }));
 
-      return { sekolahData };
+      return sekolahData;
     } catch (error) {
       throw new InternalServerErrorException(
         `Terjadi kesalahan saat menghitung jumlah sekolah: ${error.message}`,
