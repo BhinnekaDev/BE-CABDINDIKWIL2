@@ -9,10 +9,11 @@ import { SeputarCabdinModule } from './seputar-cabdin/seputar-cabdin.module';
 import { CeritaPraktikBaikModule } from './cerita_praktik_baik/cerita_praktik_baik.module';
 import { InovasiModule } from './inovasi/inovasi.module';
 import { AdminManagementModule } from './admin-management/admin-management.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
   providers: [AppService],
   controllers: [AppController],
-  imports: [AuthModule, SatpenModule, BeritaModule, PrakataModule, SeputarCabdinModule, CeritaPraktikBaikModule, InovasiModule, AdminManagementModule],
+  imports: [AuthModule, SatpenModule, BeritaModule, PrakataModule, SeputarCabdinModule, CeritaPraktikBaikModule, InovasiModule, AdminManagementModule, DashboardModule],
 })
 export class AppModule {}
