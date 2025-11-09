@@ -60,6 +60,16 @@ E-CABDINDIKWIL2/
 │   │   ├── cerita-praktik-baik.controller.ts
 │   │   ├── cerita-praktik-baik.module.ts
 │   │   └── cerita-praktik-baik.service.ts
+│   ├── dashboard/
+│   │   ├── dto/
+│   │   │   ├── admin-filter.dto.ts
+│   │   │   ├── berita-filter.dto.ts
+│   │   │   └── sekolah-filter.dto.ts
+│   │   ├── dashboard.controller.spec.ts
+│   │   ├── dashboard.controller.ts
+│   │   ├── dashboard.module.ts
+│   │   ├── dashboard.service.spec.ts
+│   │   └── dashboard.service.ts
 │   ├── inovasi/
 │   │   ├── dto/
 │   │   │   ├── create-inovasi.dto.ts
@@ -110,16 +120,18 @@ E-CABDINDIKWIL2/
 
 ## 🚀 Modul API
 
-| Modul                   | Deskripsi                                                                                                     |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------- |
-| **Auth**                | Modul autentikasi pengguna menggunakan Supabase Auth. Mendukung login, register, profil pengguna, dan logout. |
-| **Berita**              | CRUD Berita dan pengelolaan konten informasi.                                                                 |
-| **Prakata**             | CRUD Prakata Kepala Cabang Dinas Pendidikan.                                                                  |
-| **Seputar Cabdin**      | CRUD artikel atau informasi seputar Cabang Dinas.                                                             |
-| **SLB / SMA / SMK**     | CRUD data sekolah per kategori.                                                                               |
-| **Struktur Organisasi** | CRUD struktur organisasi Cabang Dinas.                                                                        |
-| **Tupoksi**             | CRUD tugas dan fungsi Cabang Dinas.                                                                           |
-| **Visi Misi**           | CRUD visi dan misi Cabang Dinas.                                                                              |
+| Modul                   | Deskripsi                                                                                                                                                              |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Auth**                | Modul autentikasi pengguna menggunakan Supabase Auth. Mendukung login, register, profil pengguna, dan logout.                                                          |
+| **Berita**              | CRUD Berita dan pengelolaan konten informasi.                                                                                                                          |
+| **Prakata**             | CRUD Prakata Kepala Cabang Dinas Pendidikan.                                                                                                                           |
+| **Seputar Cabdin**      | CRUD artikel atau informasi seputar Cabang Dinas.                                                                                                                      |
+| **SLB / SMA / SMK**     | CRUD data sekolah per kategori.                                                                                                                                        |
+| **Struktur Organisasi** | CRUD struktur organisasi Cabang Dinas.                                                                                                                                 |
+| **Tupoksi**             | CRUD tugas dan fungsi Cabang Dinas.                                                                                                                                    |
+| **Visi Misi**           | CRUD visi dan misi Cabang Dinas.                                                                                                                                       |
+| **Dashboard Admin**     | Menampilkan statistik jumlah **Admin**, **Berita**, dan **Sekolah**. Dapat difilter berdasarkan **peran (Superadmin/Admin)**, periode waktu tertentu dan jenis sekolah |
+|                         |
 
 > ⚠️ Catatan: Modul selain `Auth` bisa ditambahkan sesuai kebutuhan.
 
