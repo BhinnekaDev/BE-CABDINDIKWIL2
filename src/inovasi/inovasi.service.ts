@@ -348,6 +348,18 @@ export class InovasiService {
         const gambarLama = inovasi.inovasi_gambar?.[0];
 
         if (gambarBaru.url_gambar?.startsWith('data:image')) {
+          if (gambarLama?.url_gambar) {
+            const oldFileName = gambarLama.url_gambar.split('/').pop();
+            if (oldFileName) {
+              const { error: removeError } = await supabaseWithUser.storage
+                .from('inovasi')
+                .remove([oldFileName]);
+              if (removeError && !removeError.message.includes('not found')) {
+                throw new InternalServerErrorException(removeError.message);
+              }
+            }
+          }
+
           const base64 = gambarBaru.url_gambar.split(';base64,').pop();
           const fileExt = gambarBaru.url_gambar.substring(
             gambarBaru.url_gambar.indexOf('/') + 1,
@@ -370,15 +382,6 @@ export class InovasiService {
           const { data: publicUrlData } = supabaseWithUser.storage
             .from('inovasi')
             .getPublicUrl(fileName);
-
-          if (gambarLama?.url_gambar) {
-            const oldFileName = gambarLama.url_gambar.split('/').pop();
-            if (oldFileName) {
-              await supabaseWithUser.storage
-                .from('inovasi')
-                .remove([oldFileName]);
-            }
-          }
 
           if (gambarLama) {
             await supabaseWithUser
@@ -435,7 +438,9 @@ export class InovasiService {
 
       return updated as InovasiJoined;
     } catch (err: any) {
-      throw new InternalServerErrorException(err.message);
+      throw new InternalServerErrorException(
+        `Gagal memperbarui inovasi: ${err.message}`,
+      );
     }
   }
 

@@ -244,28 +244,29 @@ export class CeritaPraktikBaikService {
   async updateCeritaPraktikBaik(
     userJwt: string,
     paramCeritaPraktikBaikDto: ParamCeritaPraktikBaikDto,
-    updateCeritaPraktikBaikDto: UpdateCeritaPraktikBaikWithGambarDto,
+    updateCeritaDto: UpdateCeritaPraktikBaikWithGambarDto,
   ): Promise<CeritaPraktikBaikJoined> {
     const { idParam } = paramCeritaPraktikBaikDto;
     const supabaseWithUser = createSupabaseClientWithUser(userJwt);
 
     try {
-      const { data: cerita, error: ceritaError } = await supabaseWithUser
-        .from('cerita_praktik_baik')
-        .select('*, cerita_praktik_baik_gambar(id, url_gambar, keterangan)')
-        .eq('id', idParam)
-        .single();
+      const { data: ceritapraktikbaik, error: ceritapraktikbaikError } =
+        await supabaseWithUser
+          .from('cerita_praktik_baik')
+          .select('*, cerita_praktik_baik_gambar(id, url_gambar, keterangan)')
+          .eq('id', idParam)
+          .single();
 
-      if (ceritaError || !cerita) {
+      if (ceritapraktikbaikError || !ceritapraktikbaik) {
         throw new NotFoundException('Cerita praktik baik tidak ditemukan');
       }
 
       const judulBaru =
-        updateCeritaPraktikBaikDto.judul?.trim() || cerita.judul;
+        updateCeritaDto.judul?.trim() || ceritapraktikbaik.judul;
       const penulisBaru =
-        updateCeritaPraktikBaikDto.penulis?.trim() || cerita.penulis;
-      const isiBaru = updateCeritaPraktikBaikDto.isi
-        ? sanitizeHtml(updateCeritaPraktikBaikDto.isi, {
+        updateCeritaDto.penulis?.trim() || ceritapraktikbaik.penulis;
+      const isiBaru = updateCeritaDto.isi
+        ? sanitizeHtml(updateCeritaDto.isi, {
             allowedTags: [
               'b',
               'i',
@@ -291,9 +292,8 @@ export class CeritaPraktikBaikService {
             },
             allowedSchemes: ['http', 'https', 'data'],
           })
-        : cerita.isi;
+        : ceritapraktikbaik.isi;
 
-      // 🔹 Update cerita utama
       const { error: updateError } = await supabaseWithUser
         .from('cerita_praktik_baik')
         .update({
@@ -308,20 +308,31 @@ export class CeritaPraktikBaikService {
         throw new InternalServerErrorException(updateError.message);
 
       if (
-        updateCeritaPraktikBaikDto.cerita_praktik_baik_gambar &&
-        updateCeritaPraktikBaikDto.cerita_praktik_baik_gambar.length > 0
+        updateCeritaDto.cerita_praktik_baik_gambar &&
+        updateCeritaDto.cerita_praktik_baik_gambar.length > 0
       ) {
-        const gambarBaru =
-          updateCeritaPraktikBaikDto.cerita_praktik_baik_gambar[0];
-        const gambarLama = cerita.cerita_praktik_baik_gambar?.[0];
+        const gambarBaru = updateCeritaDto.cerita_praktik_baik_gambar[0];
+        const gambarLama = ceritapraktikbaik.cerita_praktik_baik_gambar?.[0];
 
         if (gambarBaru.url_gambar?.startsWith('data:image')) {
+          if (gambarLama?.url_gambar) {
+            const oldFileName = gambarLama.url_gambar.split('/').pop();
+            if (oldFileName) {
+              const { error: removeError } = await supabaseWithUser.storage
+                .from('cerita_praktik_baik')
+                .remove([oldFileName]);
+              if (removeError && !removeError.message.includes('not found')) {
+                throw new InternalServerErrorException(removeError.message);
+              }
+            }
+          }
+
           const base64 = gambarBaru.url_gambar.split(';base64,').pop();
           const fileExt = gambarBaru.url_gambar.substring(
             gambarBaru.url_gambar.indexOf('/') + 1,
             gambarBaru.url_gambar.indexOf(';'),
           );
-          const fileName = `ceritapraktikbaik-${Date.now()}-${Math.random()
+          const fileName = `cerita_praktik_baik-${Date.now()}-${Math.random()
             .toString(36)
             .substring(2)}.${fileExt}`;
 
@@ -339,17 +350,8 @@ export class CeritaPraktikBaikService {
             .from('cerita_praktik_baik')
             .getPublicUrl(fileName);
 
-          if (gambarLama?.url_gambar) {
-            const fileNameLama = gambarLama.url_gambar.split('/').pop();
-            if (fileNameLama) {
-              await supabaseWithUser.storage
-                .from('cerita_praktik_baik')
-                .remove([fileNameLama]);
-            }
-          }
-
           if (gambarLama) {
-            const { error: updateGambarError } = await supabaseWithUser
+            await supabaseWithUser
               .from('cerita_praktik_baik_gambar')
               .update({
                 url_gambar: publicUrlData.publicUrl,
@@ -359,33 +361,20 @@ export class CeritaPraktikBaikService {
                   null,
               })
               .eq('id', gambarLama.id);
-
-            if (updateGambarError)
-              throw new InternalServerErrorException(updateGambarError.message);
           } else {
-            const { error: insertError } = await supabaseWithUser
-              .from('cerita_praktik_baik_gambar')
-              .insert({
-                cerita_id: idParam,
-                url_gambar: publicUrlData.publicUrl,
-                keterangan: gambarBaru.keterangan?.trim() || null,
-              });
-
-            if (insertError)
-              throw new InternalServerErrorException(insertError.message);
+            await supabaseWithUser.from('cerita_praktik_baik_gambar').insert({
+              cerita_id: idParam,
+              url_gambar: publicUrlData.publicUrl,
+              keterangan: gambarBaru.keterangan?.trim() || null,
+            });
           }
         } else if (gambarBaru.keterangan && gambarLama) {
-          const { error: updateKeteranganError } = await supabaseWithUser
+          await supabaseWithUser
             .from('cerita_praktik_baik_gambar')
             .update({
               keterangan: gambarBaru.keterangan.trim(),
             })
             .eq('id', gambarLama.id);
-
-          if (updateKeteranganError)
-            throw new InternalServerErrorException(
-              updateKeteranganError.message,
-            );
         }
       }
 
@@ -393,20 +382,20 @@ export class CeritaPraktikBaikService {
         .from('cerita_praktik_baik')
         .select(
           `
-        id,
-        judul,
-        penulis,
-        tanggal_diterbitkan,
-        isi,
-        dibuat_pada,
-        diperbarui_pada,
-        cerita_praktik_baik_gambar (
           id,
-          url_gambar,
-          keterangan,
-          dibuat_pada
-        )
-      `,
+          judul,
+          penulis,
+          tanggal_diterbitkan,
+          isi,
+          dibuat_pada,
+          diperbarui_pada,
+          cerita_praktik_baik_gambar (
+            id,
+            url_gambar,
+            keterangan,
+            dibuat_pada
+          )
+        `,
         )
         .eq('id', idParam)
         .single();
@@ -416,7 +405,9 @@ export class CeritaPraktikBaikService {
 
       return updated as CeritaPraktikBaikJoined;
     } catch (err: any) {
-      throw new InternalServerErrorException(err.message);
+      throw new InternalServerErrorException(
+        `Gagal memperbarui cerita praktik baik: ${err.message}`,
+      );
     }
   }
 

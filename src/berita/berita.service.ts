@@ -346,6 +346,18 @@ export class BeritaService {
         const gambarLama = berita.berita_gambar?.[0];
 
         if (gambarBaru.url_gambar?.startsWith('data:image')) {
+          if (gambarLama?.url_gambar) {
+            const oldFileName = gambarLama.url_gambar.split('/').pop();
+            if (oldFileName) {
+              const { error: removeError } = await supabaseWithUser.storage
+                .from('berita')
+                .remove([oldFileName]);
+              if (removeError && !removeError.message.includes('not found')) {
+                throw new InternalServerErrorException(removeError.message);
+              }
+            }
+          }
+
           const base64 = gambarBaru.url_gambar.split(';base64,').pop();
           const fileExt = gambarBaru.url_gambar.substring(
             gambarBaru.url_gambar.indexOf('/') + 1,
@@ -368,15 +380,6 @@ export class BeritaService {
           const { data: publicUrlData } = supabaseWithUser.storage
             .from('berita')
             .getPublicUrl(fileName);
-
-          if (gambarLama?.url_gambar) {
-            const oldFileName = gambarLama.url_gambar.split('/').pop();
-            if (oldFileName) {
-              await supabaseWithUser.storage
-                .from('berita')
-                .remove([oldFileName]);
-            }
-          }
 
           if (gambarLama) {
             await supabaseWithUser
@@ -433,7 +436,9 @@ export class BeritaService {
 
       return updated as BeritaJoined;
     } catch (err: any) {
-      throw new InternalServerErrorException(err.message);
+      throw new InternalServerErrorException(
+        `Gagal memperbarui berita: ${err.message}`,
+      );
     }
   }
 
