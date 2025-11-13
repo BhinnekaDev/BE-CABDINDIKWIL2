@@ -12,10 +12,11 @@ import { AdminManagementModule } from './admin-management/admin-management.modul
 import { DashboardModule } from './dashboard/dashboard.module';
 import { FooterModule } from './footer/footer.module';
 import { LayananModule } from './layanan/layanan.module';
+import { StrukturOrganisasiModule } from './struktur_organisasi/struktur_organisasi.module';
 
 @Module({
   providers: [AppService],
   controllers: [AppController],
-  imports: [AuthModule, SatpenModule, BeritaModule, PrakataModule, SeputarCabdinModule, CeritaPraktikBaikModule, InovasiModule, AdminManagementModule, DashboardModule, FooterModule, LayananModule],
+  imports: [AuthModule, SatpenModule, BeritaModule, PrakataModule, SeputarCabdinModule, CeritaPraktikBaikModule, InovasiModule, AdminManagementModule, DashboardModule, FooterModule, LayananModule, StrukturOrganisasiModule],
 })
 export class AppModule {}
