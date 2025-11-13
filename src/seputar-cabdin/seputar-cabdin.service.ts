@@ -465,64 +465,59 @@ export class SeputarCabdinService {
         .from('seputar_cabdin')
         .select(
           `
-        id,
-        judul,
-        penulis,
-        tanggal_diterbitkan,
-        isi,
-        dibuat_pada,
-        diperbarui_pada,
-        seputar_cabdin_gambar (
-          id,
-          url_gambar,
-          keterangan,
-          dibuat_pada
-        )
-      `,
+            id,
+            judul,
+            penulis,
+            tanggal_diterbitkan,
+            isi,
+            dibuat_pada,
+            diperbarui_pada,
+            seputar_cabdin_gambar (
+              id,
+              url_gambar
+            )
+          `,
         )
         .eq('id', idParam)
         .maybeSingle();
 
-      if (fetchError) {
+      if (fetchError)
         throw new InternalServerErrorException(fetchError.message);
-      }
+      if (!existing)
+        throw new NotFoundException('Seputar cabdin tidak ditemukan');
 
-      if (!existing) {
-        throw new NotFoundException('Seputarcabdin tidak ditemukan');
-      }
-
-      const gambarArr = existing.seputar_cabdin_gambar
-        ? Array.isArray(existing.seputar_cabdin_gambar)
-          ? existing.seputar_cabdin_gambar
-          : [existing.seputar_cabdin_gambar]
-        : [];
+      const gambarArr = Array.isArray(existing.seputar_cabdin_gambar)
+        ? existing.seputar_cabdin_gambar
+        : existing.seputar_cabdin_gambar
+          ? [existing.seputar_cabdin_gambar]
+          : [];
 
       if (gambarArr.length > 0) {
         const filenames = gambarArr
           .map((g: any) => {
             if (!g?.url_gambar) return null;
-            const parts = String(g.url_gambar).split('/');
-            return parts[parts.length - 1] || null;
+            const urlParts = g.url_gambar.split('/');
+            return urlParts[urlParts.length - 1] || null;
           })
-          .filter((f: string | null) => !!f) as string[];
+          .filter(Boolean) as string[];
 
         if (filenames.length > 0) {
           const { error: removeError } = await supabaseWithUser.storage
             .from('seputar_cabdin')
             .remove(filenames);
 
-          if (removeError && removeError.message) {
+          if (removeError && !removeError.message.includes('not found')) {
             throw new InternalServerErrorException(removeError.message);
           }
         }
       }
 
       const { error: deleteGambarError } = await supabaseWithUser
-        .from('seputar_cabdin')
+        .from('seputar_cabdin_gambar')
         .delete()
         .eq('seputar_id', idParam);
 
-      if (deleteGambarError) {
+      if (deleteGambarError && deleteGambarError.code !== 'PGRST116') {
         throw new InternalServerErrorException(deleteGambarError.message);
       }
 
@@ -533,15 +528,16 @@ export class SeputarCabdinService {
           .eq('id', idParam)
           .select();
 
-      if (deleteSeputarCabdinError) {
+      if (deleteSeputarCabdinError)
         throw new InternalServerErrorException(
           deleteSeputarCabdinError.message,
         );
-      }
 
       return [existing as SeputarCabdinJoined];
     } catch (err: any) {
-      throw new InternalServerErrorException(err.message);
+      throw new InternalServerErrorException(
+        `Gagal menghapus seputar cabdin: ${err.message}`,
+      );
     }
   }
 }

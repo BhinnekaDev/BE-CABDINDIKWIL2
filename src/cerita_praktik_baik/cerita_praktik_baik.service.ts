@@ -250,7 +250,6 @@ export class CeritaPraktikBaikService {
     const supabaseWithUser = createSupabaseClientWithUser(userJwt);
 
     try {
-      // 🔹 Ambil data lama
       const { data: cerita, error: ceritaError } = await supabaseWithUser
         .from('cerita_praktik_baik')
         .select('*, cerita_praktik_baik_gambar(id, url_gambar, keterangan)')
@@ -439,53 +438,48 @@ export class CeritaPraktikBaikService {
         .from('cerita_praktik_baik')
         .select(
           `
-        id,
-        judul,
-        penulis,
-        tanggal_diterbitkan,
-        isi,
-        dibuat_pada,
-        diperbarui_pada,
-        cerita_praktik_baik_gambar (
           id,
-          url_gambar,
-          keterangan,
-          dibuat_pada
-        )
-      `,
+          judul,
+          penulis,
+          tanggal_diterbitkan,
+          isi,
+          dibuat_pada,
+          diperbarui_pada,
+          cerita_praktik_baik_gambar (
+            id,
+            url_gambar
+          )
+        `,
         )
         .eq('id', idParam)
         .maybeSingle();
 
-      if (fetchError) {
+      if (fetchError)
         throw new InternalServerErrorException(fetchError.message);
-      }
+      if (!existing)
+        throw new NotFoundException('Cerita praktik baik tidak ditemukan');
 
-      if (!existing) {
-        throw new NotFoundException('Ceritapraktikbaik tidak ditemukan');
-      }
-
-      const gambarArr = existing.cerita_praktik_baik_gambar
-        ? Array.isArray(existing.cerita_praktik_baik_gambar)
-          ? existing.cerita_praktik_baik_gambar
-          : [existing.cerita_praktik_baik_gambar]
-        : [];
+      const gambarArr = Array.isArray(existing.cerita_praktik_baik_gambar)
+        ? existing.cerita_praktik_baik_gambar
+        : existing.cerita_praktik_baik_gambar
+          ? [existing.cerita_praktik_baik_gambar]
+          : [];
 
       if (gambarArr.length > 0) {
         const filenames = gambarArr
           .map((g: any) => {
             if (!g?.url_gambar) return null;
-            const parts = String(g.url_gambar).split('/');
-            return parts[parts.length - 1] || null;
+            const urlParts = g.url_gambar.split('/');
+            return urlParts[urlParts.length - 1] || null;
           })
-          .filter((f: string | null) => !!f) as string[];
+          .filter(Boolean) as string[];
 
         if (filenames.length > 0) {
           const { error: removeError } = await supabaseWithUser.storage
             .from('cerita_praktik_baik')
             .remove(filenames);
 
-          if (removeError && removeError.message) {
+          if (removeError && !removeError.message.includes('not found')) {
             throw new InternalServerErrorException(removeError.message);
           }
         }
@@ -496,7 +490,7 @@ export class CeritaPraktikBaikService {
         .delete()
         .eq('cerita_id', idParam);
 
-      if (deleteGambarError) {
+      if (deleteGambarError && deleteGambarError.code !== 'PGRST116') {
         throw new InternalServerErrorException(deleteGambarError.message);
       }
 
@@ -509,15 +503,16 @@ export class CeritaPraktikBaikService {
         .eq('id', idParam)
         .select();
 
-      if (deleteCeritaPraktikBaikError) {
+      if (deleteCeritaPraktikBaikError)
         throw new InternalServerErrorException(
           deleteCeritaPraktikBaikError.message,
         );
-      }
 
       return [existing as CeritaPraktikBaikJoined];
     } catch (err: any) {
-      throw new InternalServerErrorException(err.message);
+      throw new InternalServerErrorException(
+        `Gagal menghapus ceritapraktikbaik: ${err.message}`,
+      );
     }
   }
 }
