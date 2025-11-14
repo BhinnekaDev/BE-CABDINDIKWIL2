@@ -82,7 +82,7 @@ export class LayananController {
    */
   @Post()
   @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
+  @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Buat layanan baru' })
   async createLayanan(
     @Body() createLayananDto: CreateLayananDto,
@@ -106,7 +106,7 @@ export class LayananController {
    */
   @Put()
   @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
+  @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Perbarui layanan yang ada' })
   @ApiQuery({
     name: 'idParam',
@@ -140,7 +140,7 @@ export class LayananController {
    */
   @Delete()
   @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
+  @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Hapus layanan yang ada' })
   @ApiQuery({
     name: 'idParam',

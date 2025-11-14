@@ -27,23 +27,23 @@ export class FooterService {
     params?: ParamFooterDto,
   ): Promise<Footer[] | FooterView | null> {
     try {
-      if (params) {
+      if (params?.idParam !== undefined && params.idParam !== null) {
         const { data, error } = await this.supabase
           .from('footer')
           .select('email, no_telp, alamat')
           .eq('id', params.idParam)
           .single();
-        if (error) {
-          throw error;
-        }
+
+        if (error) throw error;
+
         return data as FooterView;
-      } else {
-        const { data, error } = await this.supabase.from('footer').select('*');
-        if (error) {
-          throw error;
-        }
-        return data as Footer[];
       }
+
+      const { data, error } = await this.supabase.from('footer').select('*');
+
+      if (error) throw error;
+
+      return data as Footer[];
     } catch (error) {
       throw new InternalServerErrorException(
         'Gagal mendapatkan data footer',

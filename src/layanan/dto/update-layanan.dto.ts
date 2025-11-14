@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsOptional, IsString } from 'class-validator';
+import { IsEnum, IsNumber, IsOptional, IsString } from 'class-validator';
 import { KindServices } from '../interface/layanan.inteface';
 
 export class UpdateLayananDto {
@@ -22,4 +22,12 @@ export class UpdateLayananDto {
   @IsOptional()
   @IsEnum(KindServices)
   jenis_layanan?: KindServices;
+
+  @IsOptional()
+  @IsString()
+  jenis_file: string;
+
+  @IsOptional()
+  @IsNumber()
+  ukuran_file: number;
 }

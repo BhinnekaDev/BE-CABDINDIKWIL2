@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Inject,
   Injectable,
   InternalServerErrorException,
@@ -33,8 +34,8 @@ export class LayananService {
     params?: ParamLayananDto,
   ): Promise<LayananView[] | LayananView> {
     try {
-      // Hanya select field yang ada di LayananView
       let query = this.supabaseClient.from('layanan').select(`
+        id,
         judul,
         nama_file,
         url_file,
@@ -83,35 +84,42 @@ export class LayananService {
    */
   async createLayanan(
     userJwt: string,
-    createLayananDto: CreateLayananDto,
+    dto: CreateLayananDto,
   ): Promise<Layanan> {
-    const supabaseWithUser = createSupabaseClientWithUser(userJwt);
+    const supabase = createSupabaseClientWithUser(userJwt);
 
     try {
-      const { judul, jenis_layanan, nama_file, url_file } = createLayananDto;
+      const {
+        judul,
+        jenis_layanan,
+        nama_file,
+        url_file,
+        ukuran_file,
+        jenis_file,
+      } = dto;
 
-      let ukuran_file: number | undefined;
-      let jenis_file: string | undefined;
-      let publicUrl: string | undefined;
+      let finalUrl = url_file;
 
+      // Jika file dalam bentuk base64 data URI
       if (url_file?.startsWith('data:')) {
         const base64Data = url_file.split(';base64,')[1];
         const mimeType = url_file.substring(
           url_file.indexOf(':') + 1,
           url_file.indexOf(';'),
         );
-        const ext = mimeType.split('/')[1];
-        const buffer = Buffer.from(base64Data!, 'base64');
-        ukuran_file = buffer.length;
-        jenis_file = ext;
+
+        const ext = this.getExtensionFromMime(mimeType);
+        const buffer = Buffer.from(base64Data, 'base64');
 
         const fileName = `layanan-${Date.now()}-${Math.random()
           .toString(36)
           .substring(2)}.${ext}`;
 
-        const { error: uploadError } = await supabaseWithUser.storage
+        const { error: uploadError } = await supabase.storage
           .from('layanan')
-          .upload(fileName, buffer, { contentType: mimeType });
+          .upload(fileName, buffer, {
+            contentType: mimeType,
+          });
 
         if (uploadError) {
           throw new InternalServerErrorException(
@@ -119,22 +127,23 @@ export class LayananService {
           );
         }
 
-        const { data: urlData } = supabaseWithUser.storage
+        const { data: urlData } = supabase.storage
           .from('layanan')
           .getPublicUrl(fileName);
 
-        publicUrl = urlData.publicUrl;
+        finalUrl = urlData.publicUrl;
       }
 
-      const { data, error } = await supabaseWithUser
+      // Insert data ke DB
+      const { data, error } = await supabase
         .from('layanan')
         .insert({
           judul,
           jenis_layanan,
           nama_file: nama_file || null,
-          url_file: publicUrl || url_file || null,
-          ukuran_file: ukuran_file || null,
-          jenis_file: jenis_file || null,
+          url_file: finalUrl,
+          ukuran_file,
+          jenis_file,
         })
         .select()
         .single();
@@ -159,14 +168,13 @@ export class LayananService {
   async updateLayanan(
     userJwt: string,
     params: ParamLayananDto,
-    updateLayananDto: UpdateLayananDto,
+    dto: UpdateLayananDto,
   ): Promise<Layanan> {
-    const supabaseWithUser = createSupabaseClientWithUser(userJwt);
-
+    const supabase = createSupabaseClientWithUser(userJwt);
     const idLayanan = params.idParam;
 
     try {
-      const { data: layanan, error: selectError } = await supabaseWithUser
+      const { data: layanan, error: selectError } = await supabase
         .from('layanan')
         .select('*')
         .eq('id', idLayanan)
@@ -176,66 +184,71 @@ export class LayananService {
         throw new NotFoundException('Layanan tidak ditemukan');
       }
 
-      const updateData: Partial<
-        UpdateLayananDto & { ukuran_file?: number; jenis_file?: string }
-      > = {};
+      const updateData: any = {};
+      let adaFileBaru = false;
 
-      if (updateLayananDto.judul)
-        updateData.judul = updateLayananDto.judul.trim();
-      if (updateLayananDto.jenis_layanan)
-        updateData.jenis_layanan = updateLayananDto.jenis_layanan;
-      if (updateLayananDto.nama_file)
-        updateData.nama_file = updateLayananDto.nama_file;
+      if (dto.judul) updateData.judul = dto.judul.trim();
+      if (dto.jenis_layanan) updateData.jenis_layanan = dto.jenis_layanan;
+      if (dto.nama_file) updateData.nama_file = dto.nama_file;
 
-      if (updateLayananDto.url_file?.startsWith('data:')) {
+      if (dto.url_file?.startsWith('data:')) {
+        adaFileBaru = true;
+
         if (layanan.url_file) {
           const oldFileName = layanan.url_file.split('/').pop();
           if (oldFileName) {
-            const { error: removeError } = await supabaseWithUser.storage
+            const { error: removeError } = await supabase.storage
               .from('layanan')
               .remove([oldFileName]);
+
             if (removeError && !removeError.message.includes('not found')) {
-              throw new InternalServerErrorException(removeError.message);
+              throw new InternalServerErrorException(
+                `Gagal menghapus file lama: ${removeError.message}`,
+              );
             }
           }
         }
 
-        const base64Data = updateLayananDto.url_file.split(';base64,')[1];
-        const mimeType = updateLayananDto.url_file.substring(
-          updateLayananDto.url_file.indexOf(':') + 1,
-          updateLayananDto.url_file.indexOf(';'),
+        const base64Data = dto.url_file.split(';base64,')[1];
+        const mimeType = dto.url_file.substring(
+          dto.url_file.indexOf(':') + 1,
+          dto.url_file.indexOf(';'),
         );
-        const ext = mimeType.split('/')[1];
-        const buffer = Buffer.from(base64Data!, 'base64');
 
-        const fileName = `layanan-${Date.now()}-${Math.random().toString(36).substring(2)}.${ext}`;
+        const ext = this.getExtensionFromMime(mimeType);
+        const buffer = Buffer.from(base64Data, 'base64');
 
-        const { error: uploadError } = await supabaseWithUser.storage
+        const fileName = `layanan-${Date.now()}.${ext}`;
+
+        const { error: uploadError } = await supabase.storage
           .from('layanan')
-          .upload(fileName, buffer, { contentType: mimeType });
+          .upload(fileName, buffer, {
+            contentType: mimeType,
+            upsert: false,
+          });
 
         if (uploadError) {
-          throw new InternalServerErrorException(uploadError.message);
+          throw new InternalServerErrorException(
+            `Gagal upload file baru: ${uploadError.message}`,
+          );
         }
 
-        const { data: urlData } = supabaseWithUser.storage
+        const { data: urlData } = supabase.storage
           .from('layanan')
           .getPublicUrl(fileName);
 
         updateData.url_file = urlData.publicUrl;
-        updateData.ukuran_file = buffer.length;
-        updateData.jenis_file = ext;
-      } else if (updateLayananDto.url_file) {
-        updateData.url_file = updateLayananDto.url_file;
+        updateData.jenis_file = mimeType;
+        updateData.ukuran_file = buffer.byteLength;
+      } else if (dto.url_file) {
+        updateData.url_file = dto.url_file;
       }
 
-      if (Object.keys(updateData).length === 0) {
-        throw new InternalServerErrorException(
-          'Tidak ada data valid untuk diperbarui',
-        );
+      if (!adaFileBaru && Object.keys(updateData).length === 0) {
+        throw new BadRequestException('Tidak ada data valid untuk diperbarui');
       }
 
-      const { data: updatedData, error: updateError } = await supabaseWithUser
+      const { data: updatedData, error: updateError } = await supabase
         .from('layanan')
         .update(updateData)
         .eq('id', idLayanan)
@@ -314,5 +327,22 @@ export class LayananService {
         `Gagal menghapus layanan: ${err.message}`,
       );
     }
+  }
+
+  private getExtensionFromMime(mimeType: string): string {
+    const map: Record<string, string> = {
+      'application/pdf': 'pdf',
+      'image/png': 'png',
+      'image/jpeg': 'jpg',
+      'image/jpg': 'jpg',
+      'application/msword': 'doc',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+        'docx',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
+        'xlsx',
+      'application/vnd.ms-excel': 'xls',
+    };
+
+    return map[mimeType] || mimeType.split('/')[1] || 'bin';
   }
 }

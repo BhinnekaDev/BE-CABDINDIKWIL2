@@ -4,7 +4,7 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import { SupabaseClient } from '@supabase/supabase-js';
+import { SupabaseClient, createClient } from '@supabase/supabase-js';
 import { createSupabaseClientWithUser } from '../../supabase/supabase.client';
 
 import { CreateStrukturOrganisasiDto } from './dto/create-strukturorganisasi.dto';
@@ -61,63 +61,11 @@ export class StrukturOrganisasiService {
     const supabaseWithUser = createSupabaseClientWithUser(userJwt);
 
     try {
-      const strukturBase64 = createDto.gambar_struktur.split(';base64,').pop();
-      const strukturExt = createDto.gambar_struktur.substring(
-        createDto.gambar_struktur.indexOf('/') + 1,
-        createDto.gambar_struktur.indexOf(';'),
-      );
-      const strukturFileName = `struktur-${Date.now()}-${Math.random()
-        .toString(36)
-        .substring(2)}.${strukturExt}`;
-
-      const { error: uploadStrukturError } = await supabaseWithUser.storage
-        .from('struktur-organisasi')
-        .upload(strukturFileName, Buffer.from(strukturBase64!, 'base64'), {
-          contentType: `image/${strukturExt}`,
-        });
-
-      if (uploadStrukturError) {
-        throw new InternalServerErrorException(uploadStrukturError.message);
-      }
-
-      const { data: strukturUrlData } = supabaseWithUser.storage
-        .from('struktur-organisasi')
-        .getPublicUrl(strukturFileName);
-
-      const dokumentasiBase64 = createDto.gambar_dokumentasi
-        .split(';base64,')
-        .pop();
-      const dokumentasiExt = createDto.gambar_dokumentasi.substring(
-        createDto.gambar_dokumentasi.indexOf('/') + 1,
-        createDto.gambar_dokumentasi.indexOf(';'),
-      );
-      const dokumentasiFileName = `dokumentasi-${Date.now()}-${Math.random()
-        .toString(36)
-        .substring(2)}.${dokumentasiExt}`;
-
-      const { error: uploadDokumentasiError } = await supabaseWithUser.storage
-        .from('struktur-organisasi')
-        .upload(
-          dokumentasiFileName,
-          Buffer.from(dokumentasiBase64!, 'base64'),
-          {
-            contentType: `image/${dokumentasiExt}`,
-          },
-        );
-
-      if (uploadDokumentasiError) {
-        throw new InternalServerErrorException(uploadDokumentasiError.message);
-      }
-
-      const { data: dokumentasiUrlData } = supabaseWithUser.storage
-        .from('struktur-organisasi')
-        .getPublicUrl(dokumentasiFileName);
-
       const { data, error } = await supabaseWithUser
         .from('struktur_organisasi')
         .insert({
-          gambar_struktur: strukturUrlData.publicUrl,
-          gambar_dokumentasi: dokumentasiUrlData.publicUrl,
+          gambar_struktur: createDto.gambar_struktur,
+          gambar_dokumentasi: createDto.gambar_dokumentasi,
         })
         .select()
         .single();
@@ -145,6 +93,10 @@ export class StrukturOrganisasiService {
     updateDto: UpdateStrukturOrganisasiDto,
   ): Promise<StrukturOrganisasi> {
     const supabaseWithUser = createSupabaseClientWithUser(userJwt);
+    const supabaseAdmin = createClient(
+      process.env.SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    );
 
     try {
       const { data: existing, error: selectError } = await supabaseWithUser
@@ -159,101 +111,70 @@ export class StrukturOrganisasiService {
 
       const updateData: Partial<UpdateStrukturOrganisasiDto> = {};
 
+      const extractFileName = (url: string | null): string | null => {
+        if (!url) return null;
+        const parts = url.split('/');
+        return parts[parts.length - 1] ?? null;
+      };
+
       if (
         updateDto.gambar_struktur &&
-        updateDto.gambar_struktur.startsWith('data:image')
+        updateDto.gambar_struktur !== existing.gambar_struktur
       ) {
-        if (existing.gambar_struktur) {
-          const oldFileName = existing.gambar_struktur.split('/').pop();
-          if (oldFileName) {
-            const { error: removeError } = await supabaseWithUser.storage
-              .from('struktur-organisasi')
-              .remove([oldFileName]);
-            if (removeError && !removeError.message.includes('not found')) {
-              throw new InternalServerErrorException(removeError.message);
-            }
+        const oldFile = extractFileName(existing.gambar_struktur);
+
+        if (oldFile) {
+          const { error: removeErr } = await supabaseAdmin.storage
+            .from('struktur-organisasi')
+            .remove([oldFile]);
+
+          if (removeErr) {
+            throw new InternalServerErrorException(
+              `Gagal menghapus file struktur lama: ${removeErr.message}`,
+            );
           }
         }
-        const base64 = updateDto.gambar_struktur.split(';base64,').pop();
-        const ext = updateDto.gambar_struktur.substring(
-          updateDto.gambar_struktur.indexOf('/') + 1,
-          updateDto.gambar_struktur.indexOf(';'),
-        );
-        const fileName = `struktur-${Date.now()}-${Math.random().toString(36).substring(2)}.${ext}`;
 
-        const { error: uploadError } = await supabaseWithUser.storage
-          .from('struktur-organisasi')
-          .upload(fileName, Buffer.from(base64!, 'base64'), {
-            contentType: `image/${ext}`,
-          });
-
-        if (uploadError) {
-          throw new InternalServerErrorException(uploadError.message);
-        }
-
-        const { data: publicUrlData } = supabaseWithUser.storage
-          .from('struktur-organisasi')
-          .getPublicUrl(fileName);
-
-        updateData.gambar_struktur = publicUrlData.publicUrl;
+        updateData.gambar_struktur = updateDto.gambar_struktur;
       }
 
       if (
         updateDto.gambar_dokumentasi &&
-        updateDto.gambar_dokumentasi.startsWith('data:image')
+        updateDto.gambar_dokumentasi !== existing.gambar_dokumentasi
       ) {
-        if (existing.gambar_dokumentasi) {
-          const oldFileName = existing.gambar_dokumentasi.split('/').pop();
-          if (oldFileName) {
-            const { error: removeError } = await supabaseWithUser.storage
-              .from('struktur-organisasi')
-              .remove([oldFileName]);
-            if (removeError && !removeError.message.includes('not found')) {
-              throw new InternalServerErrorException(removeError.message);
-            }
+        const oldFile = extractFileName(existing.gambar_dokumentasi);
+
+        if (oldFile) {
+          const { error: removeErr } = await supabaseAdmin.storage
+            .from('struktur-organisasi')
+            .remove([oldFile]);
+
+          if (removeErr) {
+            throw new InternalServerErrorException(
+              `Gagal menghapus file dokumentasi lama: ${removeErr.message}`,
+            );
           }
         }
 
-        const base64 = updateDto.gambar_dokumentasi.split(';base64,').pop();
-        const ext = updateDto.gambar_dokumentasi.substring(
-          updateDto.gambar_dokumentasi.indexOf('/') + 1,
-          updateDto.gambar_dokumentasi.indexOf(';'),
-        );
-        const fileName = `dokumentasi-${Date.now()}-${Math.random().toString(36).substring(2)}.${ext}`;
-
-        const { error: uploadError } = await supabaseWithUser.storage
-          .from('struktur-organisasi')
-          .upload(fileName, Buffer.from(base64!, 'base64'), {
-            contentType: `image/${ext}`,
-          });
-
-        if (uploadError) {
-          throw new InternalServerErrorException(uploadError.message);
-        }
-
-        const { data: publicUrlData } = supabaseWithUser.storage
-          .from('struktur-organisasi')
-          .getPublicUrl(fileName);
-
-        updateData.gambar_dokumentasi = publicUrlData.publicUrl;
+        updateData.gambar_dokumentasi = updateDto.gambar_dokumentasi;
       }
 
-      if (Object.keys(updateData).length > 0) {
-        const { data: updated, error: updateError } = await supabaseWithUser
-          .from('struktur_organisasi')
-          .update(updateData)
-          .eq('id', params.idParam)
-          .select()
-          .single();
-
-        if (updateError) {
-          throw new InternalServerErrorException(updateError.message);
-        }
-
-        return updated as StrukturOrganisasi;
+      if (Object.keys(updateData).length === 0) {
+        return existing;
       }
 
-      return existing as StrukturOrganisasi;
+      const { data: updated, error: updateError } = await supabaseWithUser
+        .from('struktur_organisasi')
+        .update(updateData)
+        .eq('id', params.idParam)
+        .select()
+        .single();
+
+      if (updateError) {
+        throw new InternalServerErrorException(updateError.message);
+      }
+
+      return updated;
     } catch (err: any) {
       throw new InternalServerErrorException(
         `Gagal memperbarui struktur organisasi: ${err.message}`,
@@ -273,6 +194,11 @@ export class StrukturOrganisasiService {
   ): Promise<{ message: string }> {
     const supabaseWithUser = createSupabaseClientWithUser(userJwt);
 
+    const supabaseAdmin = createClient(
+      process.env.SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    );
+
     try {
       const { data: existing, error: selectError } = await supabaseWithUser
         .from('struktur_organisasi')
@@ -284,27 +210,29 @@ export class StrukturOrganisasiService {
         throw new NotFoundException('Struktur organisasi tidak ditemukan');
       }
 
-      if (existing.gambar_struktur) {
-        const oldFileName = existing.gambar_struktur.split('/').pop();
-        if (oldFileName) {
-          const { error: removeError } = await supabaseWithUser.storage
-            .from('struktur-organisasi')
-            .remove([oldFileName]);
-          if (removeError && !removeError.message.includes('not found')) {
-            throw new InternalServerErrorException(removeError.message);
-          }
-        }
-      }
+      const extractFileName = (url: string): string | null => {
+        if (!url) return null;
+        const parts = url.split('/');
+        return parts[parts.length - 1] ?? null;
+      };
 
-      if (existing.gambar_dokumentasi) {
-        const oldFileName = existing.gambar_dokumentasi.split('/').pop();
-        if (oldFileName) {
-          const { error: removeError } = await supabaseWithUser.storage
-            .from('struktur-organisasi')
-            .remove([oldFileName]);
-          if (removeError && !removeError.message.includes('not found')) {
-            throw new InternalServerErrorException(removeError.message);
-          }
+      const filesToDelete: string[] = [];
+
+      const fileStruktur = extractFileName(existing.gambar_struktur);
+      const fileDok = extractFileName(existing.gambar_dokumentasi);
+
+      if (fileStruktur) filesToDelete.push(fileStruktur);
+      if (fileDok) filesToDelete.push(fileDok);
+
+      if (filesToDelete.length > 0) {
+        const { error: removeError } = await supabaseAdmin.storage
+          .from('struktur-organisasi')
+          .remove(filesToDelete);
+
+        if (removeError) {
+          throw new InternalServerErrorException(
+            `Gagal menghapus file: ${removeError.message}`,
+          );
         }
       }
 
@@ -318,8 +246,7 @@ export class StrukturOrganisasiService {
       }
 
       return {
-        message:
-          'Struktur organisasi berhasil dihapus beserta semua file terkait',
+        message: 'Struktur organisasi dan seluruh file berhasil dihapus',
       };
     } catch (err: any) {
       throw new InternalServerErrorException(
