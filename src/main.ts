@@ -53,8 +53,8 @@ export async function createNestApp() {
 
         const document = SwaggerModule.createDocument(app, config);
 
-        server.use(json({ limit: '2mb' }));
-        server.use(urlencoded({ limit: '2mb', extended: true }));
+        server.use(json({ limit: '10mb' }));
+        server.use(urlencoded({ limit: '10mb', extended: true }));
         server.use(
           '/docs',
           swaggerUi.serve,
