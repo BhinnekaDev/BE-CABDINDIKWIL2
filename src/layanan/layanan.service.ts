@@ -54,7 +54,7 @@ export class LayananService {
         query = query.eq('id', params.idParam);
       }
 
-      const { data, error } = await query.order('created_at', {
+      const { data, error } = await query.order('dibuat_pada', {
         ascending: false,
       });
 
