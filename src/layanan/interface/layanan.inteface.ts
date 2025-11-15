@@ -20,7 +20,6 @@ export interface Layanan {
   url_file?: string | null;
   ukuran_file?: number | null;
   jenis_file?: string | null;
-  created_at?: string;
   jenis_layanan: KindServices;
 }
 
@@ -31,4 +30,5 @@ export interface LayananView {
   ukuran_file?: number | null;
   jenis_file?: string | null;
   jenis_layanan: KindServices;
+  dibuat_pada: string;
 }
