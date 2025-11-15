@@ -2,9 +2,9 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsNumber, IsOptional } from 'class-validator';
 
-export class ParamPrakataDto {
+export class ParamFooterDto {
   @ApiPropertyOptional({
-    description: 'ID prakata',
+    description: 'ID footer',
     example: 15,
   })
   @Type(() => Number)

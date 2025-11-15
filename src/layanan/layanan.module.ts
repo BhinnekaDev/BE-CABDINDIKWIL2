@@ -3,12 +3,12 @@ import { SupabaseModule } from '../../supabase/supabase.module';
 import { SupabaseService } from '../../supabase/supabase.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
-import { DashboardController } from './dashboard.controller';
-import { DashboardService } from './dashboard.service';
+import { LayananController } from './layanan.controller';
+import { LayananService } from './layanan.service';
 
 @Module({
   imports: [SupabaseModule],
-  providers: [DashboardService, SupabaseService, JwtAuthGuard],
-  controllers: [DashboardController],
+  controllers: [LayananController],
+  providers: [LayananService, SupabaseService, JwtAuthGuard],
 })
-export class DashboardModule {}
+export class LayananModule {}

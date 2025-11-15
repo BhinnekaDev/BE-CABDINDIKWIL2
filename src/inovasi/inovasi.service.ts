@@ -338,10 +338,42 @@ export class InovasiService {
         const gambarBaru = updateInovasiDto.inovasi_gambar[0];
         const gambarLama = inovasi.inovasi_gambar?.[0];
 
-        if (
-          gambarBaru.url_gambar &&
-          gambarBaru.url_gambar !== gambarLama?.url_gambar
-        ) {
+        if (gambarBaru.url_gambar?.startsWith('data:image')) {
+          if (gambarLama?.url_gambar) {
+            const oldFileName = gambarLama.url_gambar.split('/').pop();
+            if (oldFileName) {
+              const { error: removeError } = await supabaseWithUser.storage
+                .from('inovasi')
+                .remove([oldFileName]);
+              if (removeError && !removeError.message.includes('not found')) {
+                throw new InternalServerErrorException(removeError.message);
+              }
+            }
+          }
+
+          const base64 = gambarBaru.url_gambar.split(';base64,').pop();
+          const fileExt = gambarBaru.url_gambar.substring(
+            gambarBaru.url_gambar.indexOf('/') + 1,
+            gambarBaru.url_gambar.indexOf(';'),
+          );
+          const fileName = `inovasi-${Date.now()}-${Math.random()
+            .toString(36)
+            .substring(2)}.${fileExt}`;
+
+          const { error: uploadError } = await supabaseWithUser.storage
+            .from('inovasi')
+            .upload(fileName, Buffer.from(base64!, 'base64'), {
+              contentType: `image/${fileExt}`,
+              upsert: false,
+            });
+
+          if (uploadError)
+            throw new InternalServerErrorException(uploadError.message);
+
+          const { data: publicUrlData } = supabaseWithUser.storage
+            .from('inovasi')
+            .getPublicUrl(fileName);
+
           if (gambarLama) {
             await supabaseWithUser
               .from('inovasi_gambar')
@@ -397,11 +429,10 @@ export class InovasiService {
       }
 
       return updated as InovasiJoined;
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        throw new InternalServerErrorException(err.message);
-      }
-      throw new InternalServerErrorException('Terjadi kesalahan tidak terduga');
+    } catch (err: any) {
+      throw new InternalServerErrorException(
+        `Gagal memperbarui inovasi: ${err.message}`,
+      );
     }
   }
 
@@ -423,53 +454,47 @@ export class InovasiService {
         .from('inovasi')
         .select(
           `
-        id,
-        judul,
-        penulis,
-        tanggal_diterbitkan,
-        isi,
-        dibuat_pada,
-        diperbarui_pada,
-        inovasi_gambar (
           id,
-          url_gambar,
-          keterangan,
-          dibuat_pada
-        )
-      `,
+          judul,
+          penulis,
+          tanggal_diterbitkan,
+          isi,
+          dibuat_pada,
+          diperbarui_pada,
+          inovasi_gambar (
+            id,
+            url_gambar
+          )
+        `,
         )
         .eq('id', idParam)
         .maybeSingle();
 
-      if (fetchError) {
+      if (fetchError)
         throw new InternalServerErrorException(fetchError.message);
-      }
+      if (!existing) throw new NotFoundException('Inovasi tidak ditemukan');
 
-      if (!existing) {
-        throw new NotFoundException('Inovasi tidak ditemukan');
-      }
-
-      const gambarArr = existing.inovasi_gambar
-        ? Array.isArray(existing.inovasi_gambar)
-          ? existing.inovasi_gambar
-          : [existing.inovasi_gambar]
-        : [];
+      const gambarArr = Array.isArray(existing.inovasi_gambar)
+        ? existing.inovasi_gambar
+        : existing.inovasi_gambar
+          ? [existing.inovasi_gambar]
+          : [];
 
       if (gambarArr.length > 0) {
         const filenames = gambarArr
           .map((g: any) => {
             if (!g?.url_gambar) return null;
-            const parts = String(g.url_gambar).split('/');
-            return parts[parts.length - 1] || null;
+            const urlParts = g.url_gambar.split('/');
+            return urlParts[urlParts.length - 1] || null;
           })
-          .filter((f: string | null) => !!f) as string[];
+          .filter(Boolean) as string[];
 
         if (filenames.length > 0) {
           const { error: removeError } = await supabaseWithUser.storage
             .from('inovasi')
             .remove(filenames);
 
-          if (removeError && removeError.message) {
+          if (removeError && !removeError.message.includes('not found')) {
             throw new InternalServerErrorException(removeError.message);
           }
         }
@@ -480,7 +505,7 @@ export class InovasiService {
         .delete()
         .eq('inovasi_id', idParam);
 
-      if (deleteGambarError) {
+      if (deleteGambarError && deleteGambarError.code !== 'PGRST116') {
         throw new InternalServerErrorException(deleteGambarError.message);
       }
 
@@ -491,13 +516,14 @@ export class InovasiService {
           .eq('id', idParam)
           .select();
 
-      if (deleteInovasiError) {
+      if (deleteInovasiError)
         throw new InternalServerErrorException(deleteInovasiError.message);
-      }
 
       return [existing as InovasiJoined];
     } catch (err: any) {
-      throw new InternalServerErrorException(err.message);
+      throw new InternalServerErrorException(
+        `Gagal menghapus inovasi: ${err.message}`,
+      );
     }
   }
 }

@@ -330,7 +330,42 @@ export class BeritaService {
         const gambarBaru = updateBeritaDto.berita_gambar[0];
         const gambarLama = berita.berita_gambar?.[0];
 
-        if (gambarBaru.url_gambar?.startsWith('http')) {
+        if (gambarBaru.url_gambar?.startsWith('data:image')) {
+          if (gambarLama?.url_gambar) {
+            const oldFileName = gambarLama.url_gambar.split('/').pop();
+            if (oldFileName) {
+              const { error: removeError } = await supabaseWithUser.storage
+                .from('berita')
+                .remove([oldFileName]);
+              if (removeError && !removeError.message.includes('not found')) {
+                throw new InternalServerErrorException(removeError.message);
+              }
+            }
+          }
+
+          const base64 = gambarBaru.url_gambar.split(';base64,').pop();
+          const fileExt = gambarBaru.url_gambar.substring(
+            gambarBaru.url_gambar.indexOf('/') + 1,
+            gambarBaru.url_gambar.indexOf(';'),
+          );
+          const fileName = `berita-${Date.now()}-${Math.random()
+            .toString(36)
+            .substring(2)}.${fileExt}`;
+
+          const { error: uploadError } = await supabaseWithUser.storage
+            .from('berita')
+            .upload(fileName, Buffer.from(base64!, 'base64'), {
+              contentType: `image/${fileExt}`,
+              upsert: false,
+            });
+
+          if (uploadError)
+            throw new InternalServerErrorException(uploadError.message);
+
+          const { data: publicUrlData } = supabaseWithUser.storage
+            .from('berita')
+            .getPublicUrl(fileName);
+
           if (gambarLama) {
             const { error: updateGambarError } = await supabaseWithUser
               .from('berita_gambar')
@@ -400,7 +435,9 @@ export class BeritaService {
 
       return updated as BeritaJoined;
     } catch (err: any) {
-      throw new InternalServerErrorException(err.message);
+      throw new InternalServerErrorException(
+        `Gagal memperbarui berita: ${err.message}`,
+      );
     }
   }
 
@@ -431,44 +468,38 @@ export class BeritaService {
         diperbarui_pada,
         berita_gambar (
           id,
-          url_gambar,
-          keterangan,
-          dibuat_pada
+          url_gambar
         )
       `,
         )
         .eq('id', idParam)
         .maybeSingle();
 
-      if (fetchError) {
+      if (fetchError)
         throw new InternalServerErrorException(fetchError.message);
-      }
+      if (!existing) throw new NotFoundException('Berita tidak ditemukan');
 
-      if (!existing) {
-        throw new NotFoundException('Berita tidak ditemukan');
-      }
-
-      const gambarArr = existing.berita_gambar
-        ? Array.isArray(existing.berita_gambar)
-          ? existing.berita_gambar
-          : [existing.berita_gambar]
-        : [];
+      const gambarArr = Array.isArray(existing.berita_gambar)
+        ? existing.berita_gambar
+        : existing.berita_gambar
+          ? [existing.berita_gambar]
+          : [];
 
       if (gambarArr.length > 0) {
         const filenames = gambarArr
           .map((g: any) => {
             if (!g?.url_gambar) return null;
-            const parts = String(g.url_gambar).split('/');
-            return parts[parts.length - 1] || null;
+            const urlParts = g.url_gambar.split('/');
+            return urlParts[urlParts.length - 1] || null;
           })
-          .filter((f: string | null) => !!f) as string[];
+          .filter(Boolean) as string[];
 
         if (filenames.length > 0) {
           const { error: removeError } = await supabaseWithUser.storage
             .from('berita')
             .remove(filenames);
 
-          if (removeError && removeError.message) {
+          if (removeError && !removeError.message.includes('not found')) {
             throw new InternalServerErrorException(removeError.message);
           }
         }
@@ -479,7 +510,7 @@ export class BeritaService {
         .delete()
         .eq('berita_id', idParam);
 
-      if (deleteGambarError) {
+      if (deleteGambarError && deleteGambarError.code !== 'PGRST116') {
         throw new InternalServerErrorException(deleteGambarError.message);
       }
 
@@ -490,13 +521,14 @@ export class BeritaService {
           .eq('id', idParam)
           .select();
 
-      if (deleteBeritaError) {
+      if (deleteBeritaError)
         throw new InternalServerErrorException(deleteBeritaError.message);
-      }
 
       return [existing as BeritaJoined];
     } catch (err: any) {
-      throw new InternalServerErrorException(err.message);
+      throw new InternalServerErrorException(
+        `Gagal menghapus berita: ${err.message}`,
+      );
     }
   }
 }

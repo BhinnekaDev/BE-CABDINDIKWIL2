@@ -10,10 +10,13 @@ import { CeritaPraktikBaikModule } from './cerita_praktik_baik/cerita_praktik_ba
 import { InovasiModule } from './inovasi/inovasi.module';
 import { AdminManagementModule } from './admin-management/admin-management.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { FooterModule } from './footer/footer.module';
+import { LayananModule } from './layanan/layanan.module';
+import { StrukturOrganisasiModule } from './struktur_organisasi/struktur_organisasi.module';
 
 @Module({
   providers: [AppService],
   controllers: [AppController],
-  imports: [AuthModule, SatpenModule, BeritaModule, PrakataModule, SeputarCabdinModule, CeritaPraktikBaikModule, InovasiModule, AdminManagementModule, DashboardModule],
+  imports: [AuthModule, SatpenModule, BeritaModule, PrakataModule, SeputarCabdinModule, CeritaPraktikBaikModule, InovasiModule, AdminManagementModule, DashboardModule, FooterModule, LayananModule, StrukturOrganisasiModule],
 })
 export class AppModule {}
