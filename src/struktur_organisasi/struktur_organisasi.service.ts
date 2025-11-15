@@ -25,23 +25,24 @@ export class StrukturOrganisasiService {
    * @returns Array StrukturOrganisasi yang sesuai dengan kriteria
    */
   async getStrukturOrganisasi(
-    userJwt: string,
     params?: ParamStrukturOrganisasinDto,
   ): Promise<StrukturOrganisasi[]> {
-    const supabaseWithUser = createSupabaseClientWithUser(userJwt);
     try {
-      let query = supabaseWithUser
+      let query = this.supabaseClient
         .from('struktur_organisasi')
         .select('*')
         .order('id', { ascending: true });
+
       if (params && params.idParam) {
         query = query.eq('id', params.idParam);
       }
+
       const { data, error } = await query;
 
       if (error) {
         throw new InternalServerErrorException(error.message);
       }
+
       return data as StrukturOrganisasi[];
     } catch (err: any) {
       throw new InternalServerErrorException(err.message);
