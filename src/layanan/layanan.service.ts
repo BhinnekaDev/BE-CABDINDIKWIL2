@@ -35,14 +35,15 @@ export class LayananService {
   ): Promise<LayananView[] | LayananView> {
     try {
       let query = this.supabaseClient.from('layanan').select(`
-        id,
-        judul,
-        nama_file,
-        url_file,
-        ukuran_file,
-        jenis_file,
-        jenis_layanan
-      `);
+      id,
+      judul,
+      nama_file,
+      url_file,
+      ukuran_file,
+      jenis_file,
+      jenis_layanan,
+      dibuat_pada
+    `);
 
       if (kindServices) {
         query = query.eq('jenis_layanan', kindServices);
@@ -52,6 +53,11 @@ export class LayananService {
       }
       if (params?.idParam) {
         query = query.eq('id', params.idParam);
+      }
+      if (params?.dateFrom && params?.dateTo) {
+        query = query
+          .gte('dibuat_pada', params.dateFrom)
+          .lte('dibuat_pada', params.dateTo);
       }
 
       const { data, error } = await query.order('dibuat_pada', {
@@ -76,6 +82,7 @@ export class LayananService {
       );
     }
   }
+
   /*
    * Create layanan
    * @param userJwt JWT user
