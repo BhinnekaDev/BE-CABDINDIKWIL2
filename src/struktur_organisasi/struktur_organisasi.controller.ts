@@ -30,19 +30,10 @@ export class StrukturOrganisasiController {
    * Get all struktur organisasi
    * @returns All struktur organisasi
    */
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Ambil data struktur organisasi' })
   @Get()
-  async getStrukturOrganisasi(
-    @Req() req: Request,
-    @Query() params?: ParamStrukturOrganisasinDto,
-  ) {
-    const userJwt = req.headers.authorization?.split(' ')[1] || '';
-    return await this.strukturOrganisasiService.getStrukturOrganisasi(
-      userJwt,
-      params,
-    );
+  async getStrukturOrganisasi(@Query() params?: ParamStrukturOrganisasinDto) {
+    return await this.strukturOrganisasiService.getStrukturOrganisasi(params);
   }
 
   /**

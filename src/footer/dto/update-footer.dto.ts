@@ -1,9 +1,7 @@
-import { PartialType } from '@nestjs/mapped-types';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsEmail, IsOptional, IsString } from 'class-validator';
-import { CreateFooterDto } from './create-footer.dto';
 
-export class UpdateFooterDto extends PartialType(CreateFooterDto) {
+export class UpdateFooterDto {
   @ApiPropertyOptional({
     description: 'Alamat email yang diperbarui',
     example: 'kontak@perusahaan.com',

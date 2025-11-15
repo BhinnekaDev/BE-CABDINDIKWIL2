@@ -7,7 +7,6 @@ import {
 import { SupabaseClient } from '@supabase/supabase-js';
 import { createSupabaseClientWithUser } from '../../supabase/supabase.client';
 
-import { CreateFooterDto } from './dto/create-footer.dto';
 import { ParamFooterDto } from './dto/param-footer.dto';
 import { UpdateFooterDto } from './dto/update-footer.dto';
 import { Footer, FooterView } from './interface/footer.interface';
@@ -48,37 +47,6 @@ export class FooterService {
       throw new InternalServerErrorException(
         'Gagal mendapatkan data footer',
         error.message,
-      );
-    }
-  }
-
-  /*
-   * Create Footer
-   * @param {CreateFooterDto}
-   * @return {Promise<Footer>}
-   */
-  async createFooter(
-    userJwt: string,
-    createFooterDto: CreateFooterDto,
-  ): Promise<Footer> {
-    const supabaseWithUser = createSupabaseClientWithUser(userJwt);
-
-    try {
-      const { data, error } = await supabaseWithUser
-        .from('footer')
-        .insert(createFooterDto)
-        .select()
-        .single();
-
-      if (error) {
-        throw new InternalServerErrorException(error.message);
-      }
-
-      return data as Footer;
-    } catch (error: any) {
-      throw new InternalServerErrorException(
-        'Gagal membuat data footer',
-        error?.message || error,
       );
     }
   }
@@ -126,35 +94,6 @@ export class FooterService {
     } catch (error: any) {
       throw new InternalServerErrorException(
         'Gagal memperbarui data footer',
-        error?.message || error,
-      );
-    }
-  }
-
-  /*
-   * Delete Footer By ID
-   * @param {ParamFooterDto} params
-   * @return {Promise<Footer>}
-   */
-  async deleteFooter(userJwt: string, params: ParamFooterDto): Promise<Footer> {
-    const supabaseWithUser = createSupabaseClientWithUser(userJwt);
-
-    try {
-      const { data, error } = await supabaseWithUser
-        .from('footer')
-        .delete()
-        .eq('id', params.idParam)
-        .select()
-        .single();
-
-      if (error) {
-        throw new InternalServerErrorException(error.message);
-      }
-
-      return data as Footer;
-    } catch (error: any) {
-      throw new InternalServerErrorException(
-        'Gagal menghapus data footer',
         error?.message || error,
       );
     }
