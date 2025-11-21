@@ -1,28 +1,31 @@
 import {
-  Get,
-  Req,
-  Put,
-  Post,
   Body,
-  Query,
-  Delete,
-  UseGuards,
   Controller,
+  Delete,
+  Get,
+  Post,
+  Put,
+  Query,
+  Req,
+  UseGuards,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Request } from 'express';
-import { SatpenService } from './satpen.service';
-import { ParamSatpenDto } from './dto/param-satpen.dto';
-import { FilterSatpenDto } from './dto/filter-satpen.dto';
-import { CreateSatpenDto } from './dto/create-satpen.dto';
-import { UpdateSatpenDto } from './dto/update-satpen.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { ParamSatpenKindDto } from './dto/param-satpen-kind.dto';
+import { CreateJenisSekolahGambarDto } from './dto/create-jenis-sekolah-gambar.dto';
 import { CreateSatpenKindDto } from './dto/create-satpen-kind.dto';
-import { UpdateSatpenKindDto } from './dto/update-satpen-kind.dto';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { ParamSatpenLocationDto } from './dto/param-satpen-location.dto';
-import { UpdateSatpenLocationDto } from './dto/update-satpen-location.dto';
 import { CreateSatpenLocationDto } from './dto/create-satpen-location.dto';
+import { CreateSatpenDto } from './dto/create-satpen.dto';
+import { FilterSatpenDto } from './dto/filter-satpen.dto';
+import { ParamJenisSekolahGambarDto } from './dto/param-jenis-sekolah-gambar.dto';
+import { ParamSatpenKindDto } from './dto/param-satpen-kind.dto';
+import { ParamSatpenLocationDto } from './dto/param-satpen-location.dto';
+import { ParamSatpenDto } from './dto/param-satpen.dto';
+import { UpdateJenisSekolahGambarDto } from './dto/update-jenis-sekolah-gambar.dto';
+import { UpdateSatpenKindDto } from './dto/update-satpen-kind.dto';
+import { UpdateSatpenLocationDto } from './dto/update-satpen-location.dto';
+import { UpdateSatpenDto } from './dto/update-satpen.dto';
+import { SatpenService } from './satpen.service';
 
 @ApiTags('Satpen')
 @Controller('satpen')
@@ -287,5 +290,99 @@ export class SatpenController {
       throw new Error('JWT token not found');
     }
     return await this.satpenService.deleteKind(userJwt, paramSatpenKindDto);
+  }
+
+  /**
+   * Get all jenis sekolah gambar or by id_jenis or idParam
+   *
+   * @returns All jenis sekolah gambar or filtered jenis sekolah gambar
+   */
+  @Get('jenis-sekolah-gambar')
+  @ApiOperation({
+    summary:
+      'Get all jenis sekolah gambar, atau filter berdasarkan id_jenis atau idParam',
+  })
+  async getJenisSekolahGambar(@Query() params: ParamJenisSekolahGambarDto) {
+    return await this.satpenService.getJenisSekolahGambar(
+      params.id_jenis,
+      params.idParam,
+    );
+  }
+
+  /**
+   * Create jenis sekolah gambar
+   *
+   * @returns Created jenis sekolah gambar
+   */
+  @Post('jenis-sekolah-gambar')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({
+    summary: 'Tambah jenis sekolah gambar (harus login sebagai admin)',
+  })
+  async createJenisSekolahGambar(
+    @Req() req: Request,
+    @Body() createJenisSekolahGambarDto: CreateJenisSekolahGambarDto,
+  ) {
+    const userJwt = req.headers.authorization?.split(' ')[1];
+    if (!userJwt) {
+      throw new Error('JWT token not found');
+    }
+    return await this.satpenService.createJenisSekolahGambar(
+      userJwt,
+      createJenisSekolahGambarDto,
+    );
+  }
+
+  /**
+   * Update jenis sekolah gambar
+   *
+   * @returns Updated jenis sekolah gambar
+   */
+  @Put('jenis-sekolah-gambar')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({
+    summary: 'Update jenis sekolah gambar (harus login sebagai admin)',
+  })
+  async updateJenisSekolahGambar(
+    @Req() req: Request,
+    @Query() paramJenisSekolahGambarDto: ParamJenisSekolahGambarDto,
+    @Body() updateJenisSekolahGambarDto: UpdateJenisSekolahGambarDto,
+  ) {
+    const userJwt = req.headers.authorization?.split(' ')[1];
+    if (!userJwt) {
+      throw new Error('JWT token not found');
+    }
+    return await this.satpenService.updateJenisSekolahGambar(
+      userJwt,
+      paramJenisSekolahGambarDto,
+      updateJenisSekolahGambarDto,
+    );
+  }
+
+  /**
+   * Delete jenis sekolah gambar
+   *
+   * @returns Deleted jenis sekolah gambar
+   */
+  @Delete('jenis-sekolah-gambar')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({
+    summary: 'Hapus jenis sekolah gambar (harus login sebagai admin)',
+  })
+  async deleteJenisSekolahGambar(
+    @Req() req: Request,
+    @Query() paramJenisSekolahGambarDto: ParamJenisSekolahGambarDto,
+  ) {
+    const userJwt = req.headers.authorization?.split(' ')[1];
+    if (!userJwt) {
+      throw new Error('JWT token not found');
+    }
+    return await this.satpenService.deleteJenisSekolahGambar(
+      userJwt,
+      paramJenisSekolahGambarDto,
+    );
   }
 }
