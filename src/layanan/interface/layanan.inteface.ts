@@ -11,6 +11,7 @@ export enum KindServices {
   Pensiun = 'Pensiun',
   Tabel_Basis = 'Tabel_Basis',
   Kenaikan_Pangkat_Reguler = 'Kenaikan_Pangkat_Reguler',
+  Cuti = `Cuti`,
 }
 
 export interface Layanan {

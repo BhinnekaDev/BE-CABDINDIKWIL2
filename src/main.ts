@@ -33,6 +33,11 @@ export async function createNestApp() {
         }),
       );
 
+      app.use((req, res, next) => {
+        res.setHeader('Cache-Control', 'no-store');
+        next();
+      });
+
       if (process.env.LOCAL === 'true') {
         const config = new DocumentBuilder()
           .setTitle('Dokumentasi API CAB DINDIK WILAYAH II')

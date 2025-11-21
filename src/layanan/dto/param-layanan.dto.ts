@@ -1,4 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import { IsDateString, IsNumber, IsOptional } from 'class-validator';
 
 export class ParamLayananDto {
@@ -7,6 +8,7 @@ export class ParamLayananDto {
     example: 1,
   })
   @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   idParam?: number;
 
