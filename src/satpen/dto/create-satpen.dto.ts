@@ -34,6 +34,22 @@ export class CreateSatpenDto {
   status: string;
 
   @ApiProperty({
+    description: 'Jumlah siswa di satuan pendidikan',
+    example: 0,
+  })
+  @IsNumber()
+  @IsNotEmpty()
+  jumlah_siswa: number;
+
+  @ApiProperty({
+    description: 'Tautan ke halaman sekolah',
+    example: 'https://example.com/sekolah',
+  })
+  @IsString()
+  @IsNotEmpty()
+  tautan_sekolah: string;
+
+  @ApiProperty({
     description: 'ID lokasi (referensi ke tabel lokasi)',
     example: 2,
     required: false,

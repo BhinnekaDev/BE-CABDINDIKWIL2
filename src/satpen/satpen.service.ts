@@ -129,13 +129,29 @@ export class SatpenService {
     userJwt: string,
     createSatpenDto: CreateSatpenDto,
   ): Promise<Satpen[]> {
-    const { npsn, nama, jenis_id, status, lokasi_id } = createSatpenDto;
+    const {
+      npsn,
+      nama,
+      jenis_id,
+      status,
+      jumlah_siswa,
+      tautan_sekolah,
+      lokasi_id,
+    } = createSatpenDto;
 
     const supabaseWithUser = createSupabaseClientWithUser(userJwt);
 
     const { data, error } = await supabaseWithUser
       .from('satuan_pendidikan')
-      .insert({ npsn, nama, jenis_id, status, lokasi_id })
+      .insert({
+        npsn,
+        nama,
+        jenis_id,
+        status,
+        jumlah_siswa,
+        tautan_sekolah,
+        lokasi_id,
+      })
       .select();
 
     if (error) {
@@ -209,13 +225,29 @@ export class SatpenService {
     updateSatpenDto: UpdateSatpenDto,
   ): Promise<Satpen[]> {
     const { npsnParam } = paramSatpenDto;
-    const { npsn, nama, jenis_id, status, lokasi_id } = updateSatpenDto;
+    const {
+      npsn,
+      nama,
+      jenis_id,
+      status,
+      jumlah_siswa,
+      tautan_sekolah,
+      lokasi_id,
+    } = updateSatpenDto;
 
     const supabaseWithUser = createSupabaseClientWithUser(userJwt);
 
     const { data, error } = await supabaseWithUser
       .from('satuan_pendidikan')
-      .update({ npsn, nama, jenis_id, status, lokasi_id })
+      .update({
+        npsn,
+        nama,
+        jenis_id,
+        status,
+        jumlah_siswa,
+        tautan_sekolah,
+        lokasi_id,
+      })
       .eq('npsn', npsnParam)
       .select();
 
