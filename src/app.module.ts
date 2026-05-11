@@ -13,10 +13,11 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { FooterModule } from './footer/footer.module';
 import { LayananModule } from './layanan/layanan.module';
 import { StrukturOrganisasiModule } from './struktur_organisasi/struktur_organisasi.module';
+import { SpmbModule } from './spmb/spmb.module';
 
 @Module({
   providers: [AppService],
   controllers: [AppController],
-  imports: [AuthModule, SatpenModule, BeritaModule, PrakataModule, SeputarCabdinModule, CeritaPraktikBaikModule, InovasiModule, AdminManagementModule, DashboardModule, FooterModule, LayananModule, StrukturOrganisasiModule],
+  imports: [AuthModule, SatpenModule, BeritaModule, PrakataModule, SeputarCabdinModule, CeritaPraktikBaikModule, InovasiModule, AdminManagementModule, DashboardModule, FooterModule, LayananModule, StrukturOrganisasiModule, SpmbModule],
 })
 export class AppModule {}

@@ -14,7 +14,7 @@ export class UpdateSatpenDto {
     example: 'SD Negeri 2 Jakarta',
   })
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   nama: string;
 
   @ApiProperty({
@@ -22,7 +22,7 @@ export class UpdateSatpenDto {
     example: 1,
   })
   @IsNumber()
-  @IsNotEmpty()
+  @IsOptional()
   jenis_id: number;
 
   @ApiProperty({
@@ -30,8 +30,24 @@ export class UpdateSatpenDto {
     example: 'Negeri',
   })
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   status: string;
+
+  @ApiProperty({
+    description: 'Jumlah siswa di satuan pendidikan',
+    example: 0,
+  })
+  @IsNumber()
+  @IsOptional()
+  jumlah_siswa: number;
+
+  @ApiProperty({
+    description: 'Tautan ke halaman sekolah',
+    example: 'https://example.com/sekolah',
+  })
+  @IsString()
+  @IsOptional()
+  tautan_sekolah: string;
 
   @ApiProperty({
     description: 'ID lokasi (referensi ke tabel lokasi)',
