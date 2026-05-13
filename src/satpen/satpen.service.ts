@@ -46,6 +46,8 @@ export class SatpenService {
       npsn,
       nama,
       status,
+      jumlah_siswa,
+      tautan_sekolah,
       jenis_sekolah ( nama_jenis ),
       lokasi ( kelurahan, alamat )
     `);
