@@ -38,15 +38,15 @@ export class CreateSatpenDto {
     example: 0,
   })
   @IsNumber()
-  @IsNotEmpty()
+  @IsOptional()
   jumlah_siswa: number;
 
   @ApiProperty({
     description: 'Tautan ke halaman sekolah',
     example: 'https://example.com/sekolah',
   })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   tautan_sekolah: string;
 
   @ApiProperty({
