@@ -94,10 +94,6 @@ export class StrukturOrganisasiService {
     updateDto: UpdateStrukturOrganisasiDto,
   ): Promise<StrukturOrganisasi> {
     const supabaseWithUser = createSupabaseClientWithUser(userJwt);
-    const supabaseAdmin = createClient(
-      process.env.SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    );
 
     try {
       const { data: existing, error: selectError } = await supabaseWithUser
@@ -112,30 +108,11 @@ export class StrukturOrganisasiService {
 
       const updateData: Partial<UpdateStrukturOrganisasiDto> = {};
 
-      const extractFileName = (url: string | null): string | null => {
-        if (!url) return null;
-        const parts = url.split('/');
-        return parts[parts.length - 1] ?? null;
-      };
-
+      // langsung simpan URL dari FE
       if (
         updateDto.gambar_struktur &&
         updateDto.gambar_struktur !== existing.gambar_struktur
       ) {
-        const oldFile = extractFileName(existing.gambar_struktur);
-
-        if (oldFile) {
-          const { error: removeErr } = await supabaseAdmin.storage
-            .from('struktur-organisasi')
-            .remove([oldFile]);
-
-          if (removeErr) {
-            throw new InternalServerErrorException(
-              `Gagal menghapus file struktur lama: ${removeErr.message}`,
-            );
-          }
-        }
-
         updateData.gambar_struktur = updateDto.gambar_struktur;
       }
 
@@ -143,23 +120,10 @@ export class StrukturOrganisasiService {
         updateDto.gambar_dokumentasi &&
         updateDto.gambar_dokumentasi !== existing.gambar_dokumentasi
       ) {
-        const oldFile = extractFileName(existing.gambar_dokumentasi);
-
-        if (oldFile) {
-          const { error: removeErr } = await supabaseAdmin.storage
-            .from('struktur-organisasi')
-            .remove([oldFile]);
-
-          if (removeErr) {
-            throw new InternalServerErrorException(
-              `Gagal menghapus file dokumentasi lama: ${removeErr.message}`,
-            );
-          }
-        }
-
         updateData.gambar_dokumentasi = updateDto.gambar_dokumentasi;
       }
 
+      // tidak ada perubahan
       if (Object.keys(updateData).length === 0) {
         return existing;
       }

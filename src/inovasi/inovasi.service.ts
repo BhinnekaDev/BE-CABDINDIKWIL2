@@ -273,6 +273,7 @@ export class InovasiService {
     updateInovasiDto: UpdateInovasiWithGambarDto,
   ): Promise<InovasiJoined> {
     const { idParam } = paramInovasiDto;
+
     const supabaseWithUser = createSupabaseClientWithUser(userJwt);
 
     try {
@@ -287,7 +288,9 @@ export class InovasiService {
       }
 
       const judulBaru = updateInovasiDto.judul?.trim() || inovasi.judul;
+
       const penulisBaru = updateInovasiDto.penulis?.trim() || inovasi.penulis;
+
       const isiBaru = updateInovasiDto.isi
         ? sanitizeHtml(updateInovasiDto.isi, {
             allowedTags: [
@@ -313,10 +316,11 @@ export class InovasiService {
               a: ['href', 'name', 'target'],
               img: ['src', 'alt', 'title'],
             },
-            allowedSchemes: ['http', 'https'],
+            allowedSchemes: ['http', 'https', 'data'],
           })
         : inovasi.isi;
 
+      // update data inovasi
       const { error: updateError } = await supabaseWithUser
         .from('inovasi')
         .update({
@@ -331,74 +335,41 @@ export class InovasiService {
         throw new InternalServerErrorException(updateError.message);
       }
 
-      if (
-        updateInovasiDto.inovasi_gambar &&
-        updateInovasiDto.inovasi_gambar.length > 0
-      ) {
+      // update / insert gambar
+      if (updateInovasiDto.inovasi_gambar?.length) {
         const gambarBaru = updateInovasiDto.inovasi_gambar[0];
+
         const gambarLama = inovasi.inovasi_gambar?.[0];
 
-        if (gambarBaru.url_gambar?.startsWith('data:image')) {
-          if (gambarLama?.url_gambar) {
-            const oldFileName = gambarLama.url_gambar.split('/').pop();
-            if (oldFileName) {
-              const { error: removeError } = await supabaseWithUser.storage
-                .from('inovasi')
-                .remove([oldFileName]);
-              if (removeError && !removeError.message.includes('not found')) {
-                throw new InternalServerErrorException(removeError.message);
-              }
-            }
+        const payload = {
+          url_gambar: gambarBaru.url_gambar,
+          keterangan: gambarBaru.keterangan?.trim() ?? null,
+          diperbarui_pada: new Date().toISOString(),
+        };
+
+        if (gambarLama) {
+          // update gambar lama
+          const { error: updateGambarError } = await supabaseWithUser
+            .from('inovasi_gambar')
+            .update(payload)
+            .eq('id', gambarLama.id);
+
+          if (updateGambarError) {
+            throw new InternalServerErrorException(updateGambarError.message);
           }
-
-          const base64 = gambarBaru.url_gambar.split(';base64,').pop();
-          const fileExt = gambarBaru.url_gambar.substring(
-            gambarBaru.url_gambar.indexOf('/') + 1,
-            gambarBaru.url_gambar.indexOf(';'),
-          );
-          const fileName = `inovasi-${Date.now()}-${Math.random()
-            .toString(36)
-            .substring(2)}.${fileExt}`;
-
-          const { error: uploadError } = await supabaseWithUser.storage
-            .from('inovasi')
-            .upload(fileName, Buffer.from(base64!, 'base64'), {
-              contentType: `image/${fileExt}`,
-              upsert: false,
-            });
-
-          if (uploadError)
-            throw new InternalServerErrorException(uploadError.message);
-
-          const { data: publicUrlData } = supabaseWithUser.storage
-            .from('inovasi')
-            .getPublicUrl(fileName);
-
-          if (gambarLama) {
-            await supabaseWithUser
-              .from('inovasi_gambar')
-              .update({
-                url_gambar: gambarBaru.url_gambar,
-                keterangan:
-                  gambarBaru.keterangan?.trim() ||
-                  gambarLama.keterangan ||
-                  null,
-              })
-              .eq('id', gambarLama.id);
-          } else {
-            await supabaseWithUser.from('inovasi_gambar').insert({
+        } else {
+          // insert gambar baru
+          const { error: insertGambarError } = await supabaseWithUser
+            .from('inovasi_gambar')
+            .insert({
               inovasi_id: idParam,
               url_gambar: gambarBaru.url_gambar,
-              keterangan: gambarBaru.keterangan?.trim() || null,
+              keterangan: gambarBaru.keterangan?.trim() ?? null,
             });
+
+          if (insertGambarError) {
+            throw new InternalServerErrorException(insertGambarError.message);
           }
-        } else if (gambarBaru.keterangan && gambarLama) {
-          await supabaseWithUser
-            .from('inovasi_gambar')
-            .update({
-              keterangan: gambarBaru.keterangan.trim(),
-            })
-            .eq('id', gambarLama.id);
         }
       }
 

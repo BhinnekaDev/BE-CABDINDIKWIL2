@@ -178,6 +178,7 @@ export class LayananService {
     dto: UpdateLayananDto,
   ): Promise<Layanan> {
     const supabase = createSupabaseClientWithUser(userJwt);
+
     const idLayanan = params.idParam;
 
     try {
@@ -192,66 +193,34 @@ export class LayananService {
       }
 
       const updateData: any = {};
-      let adaFileBaru = false;
 
-      if (dto.judul) updateData.judul = dto.judul.trim();
-      if (dto.jenis_layanan) updateData.jenis_layanan = dto.jenis_layanan;
-      if (dto.nama_file) updateData.nama_file = dto.nama_file;
+      if (dto.judul?.trim()) {
+        updateData.judul = dto.judul.trim();
+      }
 
-      if (dto.url_file?.startsWith('data:')) {
-        adaFileBaru = true;
+      if (dto.jenis_layanan) {
+        updateData.jenis_layanan = dto.jenis_layanan;
+      }
 
-        if (layanan.url_file) {
-          const oldFileName = layanan.url_file.split('/').pop();
-          if (oldFileName) {
-            const { error: removeError } = await supabase.storage
-              .from('layanan')
-              .remove([oldFileName]);
+      if (dto.nama_file) {
+        updateData.nama_file = dto.nama_file;
+      }
 
-            if (removeError && !removeError.message.includes('not found')) {
-              throw new InternalServerErrorException(
-                `Gagal menghapus file lama: ${removeError.message}`,
-              );
-            }
-          }
-        }
-
-        const base64Data = dto.url_file.split(';base64,')[1];
-        const mimeType = dto.url_file.substring(
-          dto.url_file.indexOf(':') + 1,
-          dto.url_file.indexOf(';'),
-        );
-
-        const ext = this.getExtensionFromMime(mimeType);
-        const buffer = Buffer.from(base64Data, 'base64');
-
-        const fileName = `layanan-${Date.now()}.${ext}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from('layanan')
-          .upload(fileName, buffer, {
-            contentType: mimeType,
-            upsert: false,
-          });
-
-        if (uploadError) {
-          throw new InternalServerErrorException(
-            `Gagal upload file baru: ${uploadError.message}`,
-          );
-        }
-
-        const { data: urlData } = supabase.storage
-          .from('layanan')
-          .getPublicUrl(fileName);
-
-        updateData.url_file = urlData.publicUrl;
-        updateData.jenis_file = mimeType;
-        updateData.ukuran_file = buffer.byteLength;
-      } else if (dto.url_file) {
+      // langsung gunakan URL dari FE
+      if (dto.url_file) {
         updateData.url_file = dto.url_file;
       }
 
-      if (!adaFileBaru && Object.keys(updateData).length === 0) {
+      // optional metadata jika dikirim FE
+      if (dto.jenis_file) {
+        updateData.jenis_file = dto.jenis_file;
+      }
+
+      if (dto.ukuran_file) {
+        updateData.ukuran_file = dto.ukuran_file;
+      }
+
+      if (Object.keys(updateData).length === 0) {
         throw new BadRequestException('Tidak ada data valid untuk diperbarui');
       }
 
