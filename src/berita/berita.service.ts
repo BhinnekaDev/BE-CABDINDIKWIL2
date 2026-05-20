@@ -332,12 +332,20 @@ export class BeritaService {
 
         if (gambarBaru.url_gambar?.startsWith('data:image')) {
           if (gambarLama?.url_gambar) {
-            const oldFileName = gambarLama.url_gambar.split('/').pop();
+            const oldFileName = gambarLama.url_gambar
+              .split('/')
+              .pop()
+              ?.split('?')[0];
+
             if (oldFileName) {
               const { error: removeError } = await supabaseWithUser.storage
                 .from('berita')
                 .remove([oldFileName]);
-              if (removeError && !removeError.message.includes('not found')) {
+
+              if (
+                removeError &&
+                !removeError.message.toLowerCase().includes('not found')
+              ) {
                 throw new InternalServerErrorException(removeError.message);
               }
             }
@@ -370,7 +378,7 @@ export class BeritaService {
             const { error: updateGambarError } = await supabaseWithUser
               .from('berita_gambar')
               .update({
-                url_gambar: gambarBaru.url_gambar,
+                url_gambar: publicUrlData.publicUrl,
                 keterangan: gambarBaru.keterangan?.trim() ?? null,
                 diperbarui_pada: new Date().toISOString(),
               })
